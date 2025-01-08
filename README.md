@@ -3,7 +3,7 @@
 TThe plugin provides a dynamic overview of your vault or folders in the format of a codeblock.
 
 ## Documentation
-The documentation of the plugin can be found here: https://lostpaul.github.io/obsidian-folder-notes/Features/Folder%20overview/
+The documentation of the plugin can be found here: https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/
 
 ## Support the development of the plugin
 
