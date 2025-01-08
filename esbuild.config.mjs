@@ -15,7 +15,7 @@ esbuild.build({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ['./src/folderOverview/src/main.ts'],
+	entryPoints: ['./src/obsidian-folder-overview/src/main.ts'],
 	bundle: true,
 	external: [
 		'obsidian',
@@ -38,6 +38,6 @@ esbuild.build({
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: './src/folderOverview/main.js',
+	outfile: './src/obsidian-folder-overview/main.js',
 	conditions: ['types'],
 }).catch(() => process.exit(1));

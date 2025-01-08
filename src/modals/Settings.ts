@@ -5,7 +5,7 @@ import { updateYaml } from '../FolderOverview';
 import { FolderSuggest } from '../suggesters/FolderSuggester';
 import { getFolderPathFromString } from '../utils/functions';
 import { createOverviewSettings } from '../settings';
-import FolderOverviewPlugin from './main';
+import FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 export class FolderOverviewSettings extends Modal {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;

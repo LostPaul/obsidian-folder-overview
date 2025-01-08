@@ -2,7 +2,7 @@
 
 import { TAbstractFile, TFolder } from 'obsidian';
 import { TextInputSuggest } from './Suggest';
-import FolderOverviewPlugin from './main';
+import FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 export enum FileSuggestMode {
     TemplateFiles,

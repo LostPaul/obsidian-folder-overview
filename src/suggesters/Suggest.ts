@@ -3,7 +3,7 @@
 
 import { ISuggestOwner, Scope } from 'obsidian';
 import { createPopper, Instance as PopperInstance } from '@popperjs/core';
-import FolderOverviewPlugin from './main';
+import FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 
 

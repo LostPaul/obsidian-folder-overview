@@ -44,7 +44,7 @@ export class FileExplorerOverview {
         const yaml = this.folderOverview.yaml;
         const folderOverview = this.folderOverview;
         let folder: HTMLElement | null = null;
-        if (plugin instanceof FolderOverviewPlugin) {
+        if (plugin instanceof FolderNotesPlugin) {
             folder = getEl(yaml.folderPath, plugin);
         }
         let folderElement = folder?.parentElement;
