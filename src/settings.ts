@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, Plugin, Plugin$1, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
+import { MarkdownPostProcessorContext, normalizePath, Plugin, Plugin$1, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
 import { updateYaml, updateYamlById, overviewSettings, includeTypes } from './FolderOverview';
 import { FolderSuggest } from './suggesters/FolderSuggester';
 import { ListComponent } from './utils/ListComponent';
@@ -84,6 +84,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
                 .setPlaceholder('Folder path')
                 .setValue(yaml?.folderPath || '')
                 .onChange(async (value) => {
+                    value = normalizePath(value);
                     if (!(plugin.app.vault.getAbstractFileByPath(value) instanceof TFolder) && value !== '') return;
                     yaml.folderPath = value;
                     updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);;

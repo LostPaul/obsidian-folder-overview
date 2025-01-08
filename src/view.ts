@@ -98,7 +98,6 @@ export class FolderOverviewView extends ItemView {
                     cb.addOptions(options);
                 }
 
-                console.log('yaml', yaml);
                 cb.addOption('default', 'Default');
                 cb.setValue(yaml?.id ?? 'default');
 
