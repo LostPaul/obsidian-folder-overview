@@ -38,10 +38,11 @@ export class SettingsTab extends PluginSettingTab {
 
     display() {
         const { containerEl } = this;
+        containerEl.empty();
+        containerEl.createEl('p', { text: 'Edit the default settings of folder overviews', cls: 'setting-item-description' });
 
         this.display = this.display.bind(this);
 
-		containerEl.empty();
         createOverviewSettings(containerEl, this.plugin.settings, this.plugin, this.plugin.settings, this.display, undefined, undefined, undefined, this);
 
     }
@@ -312,7 +313,7 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
     if (file) {
         await updateYamlById(plugin, yaml.id, file, yaml);
     }
-    
+
     plugin.updateOverviewView();
 }
 
