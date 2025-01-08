@@ -1,0 +1,13 @@
+{
+    "id": "folder-overview",
+    "name": "Folder overview",
+    "version": "0.1.0",
+    "minAppVersion": "0.15.0",
+    "description": "Create a folder overview note",
+    "author": "Lost Paul",
+    "authorUrl": "https://github.com/LostPaul",
+    "fundingUrl": "https://ko-fi.com/paul305844",
+    "helpUrl": "https://lostpaul.github.io/obsidian-folder-notes/Features/Folder%20overview/",
+    "isDesktopOnly": false
+  }
+  
