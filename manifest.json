@@ -3,7 +3,7 @@
     "name": "Folder overview",
     "version": "0.1.0",
     "minAppVersion": "0.15.0",
-    "description": "Create a folder overview note",
+    "description": "The plugin provides a dynamic overview of your vault or folders in the format of a codeblock.",
     "author": "Lost Paul",
     "authorUrl": "https://github.com/LostPaul",
     "fundingUrl": "https://ko-fi.com/paul305844",
