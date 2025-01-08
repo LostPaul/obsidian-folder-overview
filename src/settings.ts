@@ -300,7 +300,9 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 
 async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
     if (!yaml.id) {
-        return plugin.saveSettings();
+        plugin.saveSettings();
+        plugin.updateOverviewView();
+        return
     }
 
     if (el && ctx) {
@@ -310,6 +312,7 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
     if (file) {
         await updateYamlById(plugin, yaml.id, file, yaml);
     }
+    
     plugin.updateOverviewView();
 }
 
