@@ -12,22 +12,22 @@ import FolderNotesPlugin from '../../main';
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
 export type overviewSettings = {
-    id: string;
-    folderPath: string;
-    title: string;
-    showTitle: boolean;
-    depth: number;
-    includeTypes: includeTypes[];
-    style: 'list' | 'grid' | 'explorer';
-    disableFileTag: boolean;
-    sortBy: 'name' | 'created' | 'modified';
-    sortByAsc: boolean;
-    showEmptyFolders: boolean;
-    onlyIncludeSubfolders: boolean;
-    storeFolderCondition: boolean;
-    showFolderNotes: boolean;
-    disableCollapseIcon: boolean;
-    alwaysCollapse: boolean;
+	id: string;
+	folderPath: string;
+	title: string;
+	showTitle: boolean;
+	depth: number;
+	includeTypes: includeTypes[];
+	style: 'list' | 'grid' | 'explorer';
+	disableFileTag: boolean;
+	sortBy: 'name' | 'created' | 'modified';
+	sortByAsc: boolean;
+	showEmptyFolders: boolean;
+	onlyIncludeSubfolders: boolean;
+	storeFolderCondition: boolean;
+	showFolderNotes: boolean;
+	disableCollapseIcon: boolean;
+	alwaysCollapse: boolean;
 };
 
 export class FolderOverview {
@@ -41,7 +41,7 @@ export class FolderOverview {
 	pathBlacklist: string[] = [];
 	folders: TFolder[] = [];
 	sourceFilePath: string;
-	sourceFolder: TFolder | undefined;
+	sourceFolder: TFolder | undefined | null;
 	root: HTMLElement;
 	listEl: HTMLUListElement;
 	defaultSettings: overviewSettings;
@@ -57,7 +57,10 @@ export class FolderOverview {
 		this.source = source;
 		this.el = el;
 		this.sourceFilePath = this.ctx.sourcePath;
-		this.sourceFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath)) as TFolder;
+		const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
+		if (sourceFolder instanceof TFolder) {
+			this.sourceFolder = sourceFolder;
+		}
 		this.defaultSettings = defaultSettings;
 		this.yaml = {
 			id: yaml?.id ?? crypto.randomUUID(),
@@ -499,7 +502,10 @@ export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOve
 		if (sourceFolderPath === '') {
 			sourceFolder = folder;
 		} else {
-			sourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath) as TFolder;
+			const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
+			if (newSourceFolder instanceof TFolder) {
+				sourceFolder = newSourceFolder;
+			}
 		}
 	}
 
