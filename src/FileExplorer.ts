@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, parseYaml, TAbstractFile, TFolder, TFile, stringifyYaml, Notice, Menu } from 'obsidian';
+import { MarkdownPostProcessorContext, parseYaml, TAbstractFile, TFolder, TFile, stringifyYaml, Notice, Menu, setIcon } from 'obsidian';
 import { getFolderNote } from '../../functions/folderNoteFunctions';
 import { FolderOverviewSettings } from './modals/Settings';
 import { getExcludedFolder } from '../../ExcludeFolders/functions/folderFunctions';
@@ -292,7 +292,7 @@ export class FileExplorerOverview {
         }
 
         if (collapseIcon) {
-            collapseIcon.innerHTML = svg;
+            setIcon(collapseIcon, svg);
             collapseIcon.onclick = () => {
                 this.handleCollapseClick(collapseIcon, plugin, yaml, pathBlacklist, sourceFolderPath, folderOverview, child);
             }
