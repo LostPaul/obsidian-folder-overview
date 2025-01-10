@@ -84,7 +84,9 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
                 .setPlaceholder('Folder path')
                 .setValue(yaml?.folderPath || '')
                 .onChange(async (value) => {
-                    value = normalizePath(value);
+                    if (value.trim() !== '') {
+                        value = normalizePath(value);
+                    }
                     if (!(plugin.app.vault.getAbstractFileByPath(value) instanceof TFolder) && value !== '') return;
                     yaml.folderPath = value;
                     updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);;

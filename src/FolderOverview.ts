@@ -64,7 +64,7 @@ export class FolderOverview {
 		this.defaultSettings = defaultSettings;
 		this.yaml = {
 			id: yaml?.id ?? crypto.randomUUID(),
-			folderPath: yaml?.folderPath ?? getFolderPathFromString(ctx.sourcePath),
+			folderPath: yaml?.folderPath.trim() ?? getFolderPathFromString(ctx.sourcePath),
 			title: yaml?.title ?? defaultSettings.title,
 			showTitle: yaml?.showTitle ?? defaultSettings.showTitle,
 			depth: yaml?.depth ?? defaultSettings.depth,
@@ -140,7 +140,7 @@ export class FolderOverview {
 		const sourceFile = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
 		if (!sourceFile) return;
 
-		let sourceFolderPath = this.yaml.folderPath || getFolderPathFromString(ctx.sourcePath);
+		let sourceFolderPath = this.yaml.folderPath.trim() || getFolderPathFromString(ctx.sourcePath);
 		if (!ctx.sourcePath.includes('/')) {
 			sourceFolderPath = '/';
 		}
@@ -150,10 +150,10 @@ export class FolderOverview {
 		let sourceFolder;
 
 		if (sourceFolderPath !== '/') {
-			if (this.yaml.folderPath === '') {
+			if (this.yaml.folderPath.trim() === '') {
 				sourceFolder = plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
 			} else {
-				sourceFolder = plugin.app.vault.getAbstractFileByPath(this.yaml.folderPath);
+				sourceFolder = plugin.app.vault.getAbstractFileByPath(this.yaml.folderPath.trim());
 			}
 		}
 
@@ -494,7 +494,7 @@ export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesP
 }
 
 export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null) {
-	const sourceFolderPath = overview.folderPath;
+	const sourceFolderPath = overview.folderPath.trim();
 	let sourceFolder: TFolder | undefined | null;
 	let title = overview.title;
 
