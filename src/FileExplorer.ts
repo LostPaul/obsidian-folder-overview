@@ -147,16 +147,18 @@ export class FileExplorerOverview {
     async addFiles(files: TAbstractFile[], childrenElement: HTMLElement, folderOverview: FolderOverview, sourceFolderPath: string) {
         const plugin = folderOverview.plugin;
         const allFiles = await folderOverview.filterFiles(files, plugin, sourceFolderPath, folderOverview.yaml.depth, folderOverview.pathBlacklist);
-        const sortedFiles = folderOverview.sortFiles(allFiles);
+        const sortedFiles = folderOverview.sortFiles((allFiles ?? []).filter((file): file is TAbstractFile => file !== null));
 
         const folders = sortedFiles.filter(child => child instanceof TFolder);
         const otherFiles = sortedFiles.filter(child => child instanceof TFile);
 
         for (const child of folders) {
+            if (!(child instanceof TFolder)) continue;
             await this.createFolderEL(plugin, child, folderOverview, childrenElement, sourceFolderPath);
         }
 
         for (const child of otherFiles) {
+            if (!(child instanceof TFile)) continue;
             await this.createFileEL(plugin, child, folderOverview, childrenElement);
         }
 
@@ -175,8 +177,8 @@ export class FileExplorerOverview {
             if (!folderElement) return;
             const childrenElement = folderElement.createDiv({ cls: 'tree-item-children nav-folder-children' });
             let files = folderOverview.sortFiles(folder.children);
-            files = await folderOverview.filterFiles(files, plugin, folder.path, yaml.depth || 1, pathBlacklist);
-            await this.addFiles(files, childrenElement, folderOverview, sourceFolderPath);
+            const filteredFiles = (await folderOverview.filterFiles(files, plugin, folder.path, yaml.depth || 1, pathBlacklist) ?? []).filter((file): file is TAbstractFile => file !== null);
+            await this.addFiles(filteredFiles, childrenElement, folderOverview, sourceFolderPath);
         }
     }
 

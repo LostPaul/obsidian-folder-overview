@@ -103,9 +103,9 @@ async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin
     }
 
     const allFiles = await folderOverview.filterFiles(folder.children, plugin, sourceFolderPath, depth, pathBlacklist);
-    const files = folderOverview.sortFiles(allFiles.filter((file) => !(file instanceof TFolder)));
+    const files = folderOverview.sortFiles(allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null));
 
-    const folders = folderOverview.sortFiles(allFiles.filter((file) => file instanceof TFolder));
+    const folders = folderOverview.sortFiles(allFiles.filter((file): file is TFile => (file instanceof TFolder) && file !== null));
     const ul = list.createEl('ul', { cls: 'folder-overview-list' });
 
     folders.forEach((file) => {

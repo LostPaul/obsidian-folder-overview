@@ -185,7 +185,7 @@ export class FolderOverview {
 			files = sourceFolder.children;
 		}
 
-		files = await this.filterFiles(files, plugin, sourceFolderPath, this.yaml.depth, this.pathBlacklist);
+		files = (await this.filterFiles(files, plugin, sourceFolderPath, this.yaml.depth, this.pathBlacklist)).filter((file): file is TAbstractFile => file !== null);
 
 		if (!this.yaml.includeTypes.includes('folder')) {
 			files = this.getAllFiles(files, sourceFolderPath, this.yaml.depth);

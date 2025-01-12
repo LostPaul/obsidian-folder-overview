@@ -62,6 +62,7 @@ export class FolderOverviewSettings extends Modal {
 		// close when user presses enter
 		contentEl.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
+				if (!modal) { return; }
 				modal.close();
 			}
 		});
