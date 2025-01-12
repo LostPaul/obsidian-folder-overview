@@ -227,8 +227,8 @@ export class FolderOverview {
 			if (this.plugin.app.workspace.layoutReady) {
 				await fileExplorerOverview.renderFileExplorer();
 			} else {
-				this.plugin.app.workspace.onLayoutReady(() => {
-					fileExplorerOverview.renderFileExplorer();
+				this.plugin.app.workspace.onLayoutReady(async () => {
+					await fileExplorerOverview.renderFileExplorer();
 				});
 			}
 		}
@@ -248,10 +248,6 @@ export class FolderOverview {
 				}
 			}
 		}
-
-		// if (this.yaml.includeTypes.length > 1 && (!this.yaml.showEmptyFolders || this.yaml.onlyIncludeSubfolders) && this.yaml.style === 'list') {
-		//     this.removeEmptyFolders(ul, 1, this.yaml);
-		// }
 	}
 
 	addEditButton(root: HTMLElement) {
@@ -462,6 +458,7 @@ export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlu
 	if (!file) return [];
 	const overviews: { [key: string]: string }[] = [];
 	const content = await plugin.app.vault.read(file);
+	// console.log('content', content);
 	if (!content) return overviews;
 
 	const yamlBlocks = content.match(/```folder-overview\n([\s\S]*?)```/g);

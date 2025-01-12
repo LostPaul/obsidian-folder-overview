@@ -72,6 +72,7 @@ export class FolderOverviewView extends ItemView {
 
         const activeFile = plugin.app.workspace.getActiveFile();
 
+        
         const overviews = await getOverviews(plugin, activeFile);
 
         let settingsContainer = contentEl.querySelector('.fn-settings-container') as HTMLElement;

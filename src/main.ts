@@ -2,7 +2,7 @@ import { Plugin, WorkspaceLeaf, Notice, MarkdownPostProcessorContext, parseYaml 
 import { FolderOverviewView, FOLDER_OVERVIEW_VIEW } from './view';
 import { overviewSettings, FolderOverview } from './FolderOverview';
 import { DEFAULT_SETTINGS, SettingsTab } from './settings';
-import { registerCommands } from './Commands';
+import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
 
 export default class FolderOverviewPlugin extends Plugin {
@@ -13,7 +13,7 @@ export default class FolderOverviewPlugin extends Plugin {
 		this.settingsTab = new SettingsTab(this);
 		this.addSettingTab(this.settingsTab);
 		this.settingsTab.display();
-		registerCommands(this);
+		registerOverviewCommands(this);
 
 		if (this.app.workspace.layoutReady) {
 			this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
@@ -33,7 +33,7 @@ export default class FolderOverviewPlugin extends Plugin {
 		console.log('loading Folder Overview plugin');
 	}
 
-	handleOverviewBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+	async handleOverviewBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
 		const observer = new MutationObserver(() => {
 			const editButton = el.parentElement?.childNodes.item(1);
 			if (editButton) {
@@ -54,11 +54,13 @@ export default class FolderOverviewPlugin extends Plugin {
 		try {
 			if (this.app.workspace.layoutReady) {
 				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
-				folderOverview.create(this, parseYaml(source), el, ctx);
+				await folderOverview.create(this, parseYaml(source), el, ctx);
+				this.updateOverviewView();
 			} else {
-				this.app.workspace.onLayoutReady(() => {
+				this.app.workspace.onLayoutReady(async () => {
 					const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
-					folderOverview.create(this, parseYaml(source), el, ctx);
+					await folderOverview.create(this, parseYaml(source), el, ctx);
+					this.updateOverviewView();
 				});
 			}
 		} catch (e) {
@@ -98,6 +100,7 @@ export default class FolderOverviewPlugin extends Plugin {
 	}
 
 	async updateOverviewView() {
+		// console.log('updating overview view');
 		const { workspace } = this.app;
 		const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 		if (!leaf) return;

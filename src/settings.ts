@@ -44,11 +44,12 @@ export class SettingsTab extends PluginSettingTab {
         this.display = this.display.bind(this);
 
         createOverviewSettings(containerEl, this.plugin.settings, this.plugin, this.plugin.settings, this.display, undefined, undefined, undefined, this);
-
     }
 }
 
-export async function createOverviewSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings) {
+
+
+export async function createOverviewSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string | null) {
     new Setting(contentEl)
         .setName('Show the title')
         .setDesc('Choose if the title should be shown')
@@ -61,19 +62,19 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
                     refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
                 })
         );
-    if (yaml.showTitle) {
-        new Setting(contentEl)
-            .setName('Title')
-            .setDesc('Choose the title of the folder overview')
-            .addText((text) =>
-                text
-                    .setValue(yaml?.title || '{{folderName}} overview')
-                    .onChange(async (value) => {
-                        yaml.title = value;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);;
-                    })
-            );
-    }
+
+    const titleContainer = contentEl.createDiv({ cls: 'title-container-fn' });
+    new Setting(titleContainer)
+        .setName('Title')
+        .setDesc('Choose the title of the folder overview')
+        .addText((text) =>
+            text
+                .setValue(yaml?.title || '{{folderName}} overview')
+                .onChange(async (value) => {
+                    yaml.title = value;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);;
+                })
+        );
 
     const folderPathSetting = new Setting(contentEl)
         .setName('Folder path for the overview')
@@ -108,19 +109,19 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
                 })
         );
 
-    if (yaml.style === 'explorer') {
-        new Setting(contentEl)
-            .setName('Store collapsed condition')
-            .setDesc('Choose if the collapsed condition should be stored stored until you restart Obsidian')
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(yaml.storeFolderCondition)
-                    .onChange(async (value) => {
-                        yaml.storeFolderCondition = value;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);;
-                    })
-            );
-    }
+    const storeFolderConditionContainer = contentEl.createDiv({ cls: 'explorer-container-fn' });
+    new Setting(storeFolderConditionContainer)
+        .setName('Store collapsed condition')
+        .setDesc('Choose if the collapsed condition should be stored stored until you restart Obsidian')
+        .addToggle((toggle) =>
+            toggle
+                .setValue(yaml.storeFolderCondition)
+                .onChange(async (value) => {
+                    yaml.storeFolderCondition = value;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);;
+                })
+        );
+
 
     const setting = new Setting(contentEl);
     setting.setName('Include types');
@@ -166,24 +167,19 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
         });
     }
 
-    let disableFileTag;
-    yaml.includeTypes?.forEach((type: string) => {
-        type === 'folder' || type === 'markdown' ? (disableFileTag = true) : null;
-    });
 
-    if (disableFileTag) {
-        new Setting(contentEl)
-            .setName('Disable file tag')
-            .setDesc('Choose if the file tag should be shown after the file name')
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(yaml.disableFileTag)
-                    .onChange(async (value) => {
-                        yaml.disableFileTag = value;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
-                    });
-            });
-    }
+    const fileTagContainer = contentEl.createDiv({ cls: 'explorer-container-fn' });
+    new Setting(fileTagContainer)
+        .setName('Disable file tag')
+        .setDesc('Choose if the file tag should be shown after the file name')
+        .addToggle((toggle) => {
+            toggle
+                .setValue(yaml.disableFileTag)
+                .onChange(async (value) => {
+                    yaml.disableFileTag = value;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                });
+        });
 
     new Setting(contentEl)
         .setName('Show folder notes')
@@ -244,66 +240,82 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
         });
 
-    if (yaml.style === 'list') {
-        new Setting(contentEl)
-            .setName('Show folder names of folders that appear empty in the folder overview')
-            .setDesc('Show the names of folders that appear to have no files/folders in the folder overview. That\'s mostly the case when you set the file depth to 1.')
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(yaml.showEmptyFolders)
-                    .onChange(async (value) => {
-                        yaml.showEmptyFolders = value;
-                        yaml.onlyIncludeSubfolders = false;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
-                        refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-                    });
-            });
-
-        if (yaml.showEmptyFolders) {
-            new Setting(contentEl)
-                .setName('Only show empty folders which are on the first level of the folder overview')
-                .addToggle((toggle) => {
-                    toggle
-                        .setValue(yaml.onlyIncludeSubfolders)
-                        .onChange(async (value) => {
-                            yaml.onlyIncludeSubfolders = value;
-                            updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
-                        });
+    const overviewListStyleContainer = contentEl.createDiv({ cls: 'overview-list-style-container-fn' });
+    new Setting(overviewListStyleContainer)
+        .setName('Show folder names of folders that appear empty in the folder overview')
+        .setDesc('Show the names of folders that appear to have no files/folders in the folder overview. That\'s mostly the case when you set the file depth to 1.')
+        .addToggle((toggle) => {
+            toggle
+                .setValue(yaml.showEmptyFolders)
+                .onChange(async (value) => {
+                    yaml.showEmptyFolders = value;
+                    yaml.onlyIncludeSubfolders = false;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                    refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
                 });
-        }
-    }
+        });
 
-    if (yaml.style === 'explorer') {
-        new Setting(contentEl)
-            .setName('Disable collapse icon for folder notes')
-            .setDesc('Remove the collapse icon next to the folder name for folder notes when they only contain the folder note itself')
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(yaml.disableCollapseIcon)
-                    .onChange(async (value) => {
-                        yaml.disableCollapseIcon = value;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
-                    });
-            });
+    const showEmptyFoldersContainer = contentEl.createDiv({ cls: 'show-empty-folders-container-fn' });
+    new Setting(showEmptyFoldersContainer)
+        .setName('Only show empty folders which are on the first level of the folder overview')
+        .addToggle((toggle) => {
+            toggle
+                .setValue(yaml.onlyIncludeSubfolders)
+                .onChange(async (value) => {
+                    yaml.onlyIncludeSubfolders = value;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                });
+        });
 
-        new Setting(contentEl)
-            .setName('Collapse all in the tree by default')
-            .setDesc('Collapse every folder in the file explorer in the overview by default')
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(yaml.alwaysCollapse)
-                    .onChange(async (value) => {
-                        yaml.alwaysCollapse = value;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
-                    });
-            });
-    }
+
+
+
+    const explorerContainer = contentEl.createDiv({ cls: 'explorer-container-fn' });
+    new Setting(explorerContainer)
+        .setName('Disable collapse icon for folder notes')
+        .setDesc('Remove the collapse icon next to the folder name for folder notes when they only contain the folder note itself')
+        .addToggle((toggle) => {
+            toggle
+                .setValue(yaml.disableCollapseIcon)
+                .onChange(async (value) => {
+                    yaml.disableCollapseIcon = value;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                });
+        });
+
+    new Setting(explorerContainer)
+        .setName('Collapse all in the tree by default')
+        .setDesc('Collapse every folder in the file explorer in the overview by default')
+        .addToggle((toggle) => {
+            toggle
+                .setValue(yaml.alwaysCollapse)
+                .onChange(async (value) => {
+                    yaml.alwaysCollapse = value;
+                    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                });
+        });
+
+    updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
 }
 
 async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
+    let disableFileTag;
+    yaml.includeTypes?.forEach((type: string) => {
+        type === 'folder' || type === 'markdown' ? (disableFileTag = true) : null;
+    });
+    
+    toggleSections(contentEl, {
+        'title-container-fn': yaml.showTitle,
+        'folder-path-container-fn': yaml.folderPath !== '',
+        'overview-list-style-container-fn': yaml.style === 'list',
+        'show-empty-folders-container-fn': yaml.style === 'list' && yaml.showEmptyFolders,
+        'explorer-container-fn': yaml.style === 'explorer',
+    });
     if (!yaml.id) {
         plugin.saveSettings();
-        plugin.updateOverviewView();
+        if (file === undefined) {
+            plugin.updateOverviewView();
+        }
         return
     }
 
@@ -314,13 +326,27 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
     if (file) {
         await updateYamlById(plugin, yaml.id, file, yaml);
     }
-
-    plugin.updateOverviewView();
 }
 
-function refresh(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings) {
+function refresh(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string) {
+    // plugin.updateOverviewView();
     if (file) {
         contentEl = contentEl.parentElement as HTMLElement;
     }
-    display(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+    // display(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+
+}
+
+function toggleSections(contentEl: HTMLElement, sections: Record<string, boolean>) {
+    Object.entries(sections).forEach(([sectionClass, shouldShow]) => {
+        const sections = contentEl.querySelectorAll(`.${sectionClass}`);
+        sections.forEach((section) => {
+            if (shouldShow && section) {
+                section.classList.remove('hide');
+            } else {
+                // console.log('section add hide', section);
+                section?.classList.add('hide');
+            }
+        });
+    });
 }
