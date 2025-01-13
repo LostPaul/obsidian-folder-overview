@@ -56,7 +56,9 @@ const createOrReplaceSetting = (
     let sectionContainer = container.querySelector(`.setting-${section}`);
     if (sectionContainer) {
         if (changedSection === section || changedSection === 'all') {
-            sectionContainer.remove();
+            sectionContainer.empty();
+            renderSetting(sectionContainer as HTMLElement);
+            return;
         } else {
             return;
         }

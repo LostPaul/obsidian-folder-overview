@@ -31,7 +31,7 @@ export class FolderOverviewView extends ItemView {
         this.registerEvent(
             this.plugin.app.workspace.on('file-open', (file) => {
                 this.activeFile = file;
-                this.display(this.contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, undefined, undefined, file, );
+                this.display(this.contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, undefined, undefined, file,);
             })
         );
     }
@@ -81,7 +81,7 @@ export class FolderOverviewView extends ItemView {
 
         const activeFile = plugin.app.workspace.getActiveFile();
 
-        
+
         const overviews = await getOverviews(plugin, activeFile);
 
         let settingsContainer = contentEl.querySelector('.fn-settings-container') as HTMLElement;
@@ -89,42 +89,47 @@ export class FolderOverviewView extends ItemView {
             settingsContainer = contentEl.createDiv({ cls: 'fn-settings-container' });
         }
 
-        const overviewSetting = new Setting(settingsContainer);
-        overviewSetting
-            .setName('Select overview')
-            .setClass('fn-select-overview-setting')
-            .addDropdown((cb) => {
-                if (activeFile) {
-                    const options = overviews.reduce((acc, overview) => {
-                        acc[overview.id] = parseOverviewTitle(
-                            overview as any as overviewSettings,
-                            plugin,
-                            activeFile.parent
-                        );
-                        return acc;
-                    }, {} as Record<string, string>);
-                    cb.addOptions(options);
-                }
+        let dropdown = settingsContainer.querySelector('.fn-select-overview-setting');
+        if (!dropdown) {
+            dropdown = settingsContainer.createDiv({ cls: 'fn-select-overview-setting' });
 
-                cb.addOption('default', 'Default');
-                cb.setValue(yaml?.id ?? 'default');
-
-                if (cb.getValue() === 'default' || !yaml?.id.trim()) {
-                    yaml = defaultSettings;
-                    cb.setValue('default');
-                } else {
-                    yaml = overviews.find((overview) => overview.id === yaml.id) as any as overviewSettings;
-                }
-
-                cb.onChange(async (value) => {
-                    if (value === 'default') {
-                        yaml = defaultSettings;
-                    } else {
-                        yaml = overviews.find((overview) => overview.id === value) as any as overviewSettings;
+            const overviewSetting = new Setting(dropdown as HTMLElement);
+            overviewSetting
+                .setName('Select overview')
+                .setClass('fn-select-overview-setting')
+                .addDropdown((cb) => {
+                    if (activeFile) {
+                        const options = overviews.reduce((acc, overview) => {
+                            acc[overview.id] = parseOverviewTitle(
+                                overview as any as overviewSettings,
+                                plugin,
+                                activeFile.parent
+                            );
+                            return acc;
+                        }, {} as Record<string, string>);
+                        cb.addOptions(options);
                     }
-                    await display(contentEl, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
+
+                    cb.addOption('default', 'Default');
+                    cb.setValue(yaml?.id ?? 'default');
+
+                    if (cb.getValue() === 'default' || !yaml?.id.trim()) {
+                        yaml = defaultSettings;
+                        cb.setValue('default');
+                    } else {
+                        yaml = overviews.find((overview) => overview.id === yaml.id) as any as overviewSettings;
+                    }
+
+                    cb.onChange(async (value) => {
+                        if (value === 'default') {
+                            yaml = defaultSettings;
+                        } else {
+                            yaml = overviews.find((overview) => overview.id === value) as any as overviewSettings;
+                        }
+                        await display(contentEl, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
+                    });
                 });
-            });
+        }
 
         await createOverviewSettings(settingsContainer, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
     }
