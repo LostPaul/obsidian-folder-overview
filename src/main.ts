@@ -105,6 +105,6 @@ export default class FolderOverviewPlugin extends Plugin {
 		const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 		if (!leaf) return;
 		const view = leaf.view as any as FolderOverviewView;
-		view.display(view.contentEl, view.yaml, this, view.defaultSettings, view.display, undefined, undefined, view.activeFile);
+		view.display(view.contentEl, view.yaml, this, view.defaultSettings, view.display, undefined, undefined, view.activeFile, this.settingsTab, view.modal, view.changedSection);
 	}
 }

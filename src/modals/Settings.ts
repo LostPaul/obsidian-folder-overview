@@ -56,7 +56,17 @@ export class FolderOverviewSettings extends Modal {
 		this.display(contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, this.el, this.ctx);
 	}
 
-	display(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: SettingTab, modal?: FolderOverviewSettings) {
+	display(contentEl: HTMLElement, 
+		yaml: overviewSettings, 
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		defaultSettings: overviewSettings, 
+		display: CallableFunction, 
+		el?: HTMLElement, 
+		ctx?: MarkdownPostProcessorContext, 
+		file?: TFile | null, 
+		settingsTab?: SettingTab, 
+		modal?: FolderOverviewSettings, 
+		changedSection?: string) {
 		modal = this ?? modal;
 		contentEl.empty();
 		// close when user presses enter
@@ -72,7 +82,7 @@ export class FolderOverviewSettings extends Modal {
 			contentEl.createEl('h2', { text: 'Default folder overview settings' });
 		}
 
-		createOverviewSettings(contentEl, yaml, plugin, defaultSettings, display, el, ctx, undefined, undefined, modal);
+		createOverviewSettings(contentEl, yaml, plugin, defaultSettings, display, el, ctx, undefined, undefined, modal, changedSection);
 	}
 
 	onClose() {
