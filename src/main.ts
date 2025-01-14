@@ -102,6 +102,7 @@ export default class FolderOverviewPlugin extends Plugin {
 	}
 
 	updateOverviewView = updateOverviewView;
+	updateViewDropdown = updateViewDropdown;
 }
 
 export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNotesPlugin, newYaml?: overviewSettings) {
@@ -111,4 +112,12 @@ export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNo
 	const view = leaf.view as any as FolderOverviewView;
 	const yaml = view.yaml.id === '' ?  view.yaml : newYaml;
 	view.display(view.contentEl, yaml ?? view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'all');
+}
+
+export async function updateViewDropdown(plugin: FolderOverviewPlugin | FolderNotesPlugin) {
+	const { workspace } = plugin.app;
+	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
+	if (!leaf) return;
+	const view = leaf.view as any as FolderOverviewView;
+	view.display(view.contentEl, view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'dropdown');
 }

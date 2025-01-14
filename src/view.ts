@@ -31,7 +31,8 @@ export class FolderOverviewView extends ItemView {
         this.registerEvent(
             this.plugin.app.workspace.on('file-open', (file) => {
                 this.activeFile = file;
-                this.display(this.contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, undefined, undefined, file,);
+                console.log('this.yaml', this.yaml);
+                this.display(this.contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, undefined, undefined, file, undefined, undefined, 'all');
             })
         );
     }
@@ -80,7 +81,6 @@ export class FolderOverviewView extends ItemView {
 
         const activeFile = plugin.app.workspace.getActiveFile();
 
-
         const overviews = await getOverviews(plugin, activeFile);
 
         let settingsContainer = contentEl.querySelector('.fn-settings-container') as HTMLElement;
@@ -89,7 +89,8 @@ export class FolderOverviewView extends ItemView {
         }
 
         let dropdown = settingsContainer.querySelector('.fn-select-overview-setting');
-        if (!dropdown) {
+        if (!dropdown || changedSection === 'all' || changedSection === 'dropdown') {
+            if (dropdown) { settingsContainer.empty(); }
             dropdown = settingsContainer.createDiv({ cls: 'fn-select-overview-setting' });
 
             const overviewSetting = new Setting(dropdown as HTMLElement);
@@ -111,8 +112,9 @@ export class FolderOverviewView extends ItemView {
 
                     cb.addOption('default', 'Default');
                     cb.setValue(yaml?.id ?? 'default');
-
-                    if (cb.getValue() === 'default' || !yaml?.id.trim()) {
+                    console.log('cb.getValue()', cb.getValue());
+                    if (cb.getValue() === 'default' || !yaml?.id.trim() || cb.getValue().trim() === '') {
+                        console.log('defaultSettings', defaultSettings);
                         yaml = defaultSettings;
                         cb.setValue('default');
                     } else {
@@ -131,6 +133,7 @@ export class FolderOverviewView extends ItemView {
         }
 
         this.yaml = yaml;
+        console.log('yaml', yaml);
         await createOverviewSettings(settingsContainer, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
     }
 }
