@@ -126,11 +126,12 @@ export class FolderOverviewView extends ItemView {
                         } else {
                             yaml = overviews.find((overview) => overview.id === value) as any as overviewSettings;
                         }
-                        await display(contentEl, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
+                        await display(contentEl, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, 'all');
                     });
                 });
         }
 
+        this.yaml = yaml;
         await createOverviewSettings(settingsContainer, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
     }
 }
