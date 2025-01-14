@@ -1,6 +1,6 @@
 # Obsidian folder overview
 
-The plugin provides a dynamic overview of your vault or folders in the format of a codeblock.
+The plugin provides a dynamic overview of your vault or folders in the format of a code block.
 
 ## Documentation
 The documentation of the plugin can be found here: https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/
