@@ -31,7 +31,6 @@ export class FolderOverviewView extends ItemView {
         this.registerEvent(
             this.plugin.app.workspace.on('file-open', (file) => {
                 this.activeFile = file;
-                console.log('this.yaml', this.yaml);
                 this.display(this.contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, undefined, undefined, file, undefined, undefined, 'all');
             })
         );
@@ -112,9 +111,7 @@ export class FolderOverviewView extends ItemView {
 
                     cb.addOption('default', 'Default');
                     cb.setValue(yaml?.id ?? 'default');
-                    console.log('cb.getValue()', cb.getValue());
                     if (cb.getValue() === 'default' || !yaml?.id.trim() || cb.getValue().trim() === '') {
-                        console.log('defaultSettings', defaultSettings);
                         yaml = defaultSettings;
                         cb.setValue('default');
                     } else {
@@ -133,7 +130,6 @@ export class FolderOverviewView extends ItemView {
         }
 
         this.yaml = yaml;
-        console.log('yaml', yaml);
         await createOverviewSettings(settingsContainer, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, changedSection);
     }
 }

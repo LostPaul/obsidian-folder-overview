@@ -352,19 +352,16 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
     if (!yaml.id) {
         plugin.saveSettings();
         if (file === undefined) {
-            console.log('updateOverviewView');
             plugin.updateOverviewView(plugin);
         }
         return
     }
 
     if (el && ctx) {
-        console.log('updateYaml', yaml);
         await updateYaml(plugin, ctx, el, yaml);
     }
 
     if (file) {
-        console.log('updateYamlById', yaml);
         await updateYamlById(plugin, yaml.id, file, yaml);
     }
 }
@@ -384,7 +381,6 @@ function toggleSections(contentEl: HTMLElement, sections: Record<string, boolean
             if (shouldShow && section) {
                 section.classList.remove('hide');
             } else {
-                // console.log('section add hide', section);
                 section?.classList.add('hide');
             }
         });

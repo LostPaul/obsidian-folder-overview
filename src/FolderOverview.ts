@@ -458,7 +458,6 @@ export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlu
 	if (!file) return [];
 	const overviews: { [key: string]: string }[] = [];
 	const content = await plugin.app.vault.read(file);
-	// console.log('content', content);
 	if (!content) return overviews;
 
 	const yamlBlocks = content.match(/```folder-overview\n([\s\S]*?)```/g);
