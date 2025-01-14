@@ -86,7 +86,7 @@ export class FolderOverviewSettings extends Modal {
 	}
 
 	onClose() {
-		this.plugin.updateOverviewView();
+		this.plugin.updateOverviewView(this.plugin, this.yaml);
 		const { contentEl } = this;
 		contentEl.empty();
 	}

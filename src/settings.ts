@@ -64,7 +64,7 @@ const createOrReplaceSetting = (
         }
     }
 
-    sectionContainer = container.createDiv({ cls: `setting-${section}` });
+    sectionContainer = container.createDiv({ cls: `setting-${section} overview-setting-item-fv` });
     renderSetting(sectionContainer as HTMLElement);
 };
 
@@ -72,8 +72,8 @@ const createOrReplaceSetting = (
 export async function createOverviewSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string | null) {
     changedSection = changedSection ?? null;
 
-    createOrReplaceSetting(contentEl, 'showTitle', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'showTitle', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Show the title')
             .setDesc('Choose if the title should be shown')
             .addToggle((toggle) =>
@@ -87,8 +87,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             );
     });
 
-    createOrReplaceSetting(contentEl, 'title-container-fn', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'title-container-fn', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Title')
             .setDesc('Choose the title of the folder overview')
             .addText((text) =>
@@ -101,8 +101,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             );
     });
 
-    createOrReplaceSetting(contentEl, 'folder-path', changedSection, (el) => {
-        const folderPathSetting = new Setting(el)
+    createOrReplaceSetting(contentEl, 'folder-path', changedSection, (settingEl) => {
+        const folderPathSetting = new Setting(settingEl)
             .setName('Folder path for the overview')
             .setDesc('Choose the folder path for the overview')
             .addSearch((search) => {
@@ -122,8 +122,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
         folderPathSetting.settingEl.classList.add('fn-overview-folder-path');
     });
 
-    createOrReplaceSetting(contentEl, 'overview-style', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'overview-style', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Overview style')
             .setDesc('Choose the style of the overview (grid style soon)')
             .addDropdown((dropdown) =>
@@ -139,8 +139,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             );
     });
 
-    createOrReplaceSetting(contentEl, 'store-collapse-condition', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'store-collapse-condition', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Store collapsed condition')
             .setDesc('Choose if the collapsed condition should be stored until you restart Obsidian')
             .addToggle((toggle) =>
@@ -153,9 +153,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             );
     });
 
-    console.log('changedSection', changedSection);
-    createOrReplaceSetting(contentEl, 'include-types', changedSection, (el) => {
-        const setting = new Setting(el);
+    createOrReplaceSetting(contentEl, 'include-types', changedSection, (settingEl) => {
+        const setting = new Setting(settingEl);
         setting.setName('Include types');
         const list = new ListComponent(setting.settingEl, yaml.includeTypes || [], ['markdown', 'folder']);
         list.on('update', (values) => {
@@ -200,8 +199,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
         }
     });
 
-    createOrReplaceSetting(contentEl, 'file-tag', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'file-tag', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Disable file tag')
             .setDesc('Choose if the file tag should be shown after the file name')
             .addToggle((toggle) => {
@@ -214,8 +213,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
     });
 
-    createOrReplaceSetting(contentEl, 'show-folder-notes', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'show-folder-notes', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Show folder notes')
             .setDesc('Choose if folder notes (the note itself and not the folder name) should be shown in the overview')
             .addToggle((toggle) =>
@@ -228,8 +227,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             );
     });
 
-    createOrReplaceSetting(contentEl, 'file-depth', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'file-depth', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('File depth')
             .setDesc('File & folder = +1 depth')
             .addSlider((slider) =>
@@ -244,8 +243,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             );
     });
 
-    createOrReplaceSetting(contentEl, 'sort-files', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'sort-files', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Sort files by')
             .setDesc('Choose how the files should be sorted')
             .addDropdown((dropdown) =>
@@ -275,8 +274,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
     });
 
-    createOrReplaceSetting(contentEl, 'show-empty-folders', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'show-empty-folders', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Show folder names of folders that appear empty in the folder overview')
             .setDesc('Show the names of folders that appear to have no files/folders in the folder overview. That\'s mostly the case when you set the file depth to 1.')
             .addToggle((toggle) => {
@@ -291,8 +290,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
     });
 
-    createOrReplaceSetting(contentEl, 'show-empty-folders-only-first-level', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'show-empty-folders-only-first-level', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Only show empty folders which are on the first level of the folder overview')
             .addToggle((toggle) => {
                 toggle
@@ -304,8 +303,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
     });
 
-    createOrReplaceSetting(contentEl, 'disable-collapse-icon', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'disable-collapse-icon', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Disable collapse icon for folder notes')
             .setDesc('Remove the collapse icon next to the folder name for folder notes when they only contain the folder note itself')
             .addToggle((toggle) => {
@@ -318,8 +317,8 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
     });
 
-    createOrReplaceSetting(contentEl, 'collapse-all-by-default', changedSection, (el) => {
-        new Setting(el)
+    createOrReplaceSetting(contentEl, 'collapse-all-by-default', changedSection, (settingEl) => {
+        new Setting(settingEl)
             .setName('Collapse all in the tree by default')
             .setDesc('Collapse every folder in the file explorer in the overview by default')
             .addToggle((toggle) => {
@@ -343,7 +342,6 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
 
     toggleSections(contentEl, {
         'setting-title-container-fn': yaml.showTitle,
-        'setting-folder-path': yaml.folderPath !== '',
         'setting-store-collapse-condition': yaml.style === 'explorer',
         'setting-file-tag': disableFileTag ?? false,
         'setting-show-empty-folders': yaml.style === 'list',
@@ -354,23 +352,24 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
     if (!yaml.id) {
         plugin.saveSettings();
         if (file === undefined) {
-            plugin.updateOverviewView();
+            console.log('updateOverviewView');
+            plugin.updateOverviewView(plugin);
         }
         return
     }
 
     if (el && ctx) {
+        console.log('updateYaml', yaml);
         await updateYaml(plugin, ctx, el, yaml);
     }
 
     if (file) {
+        console.log('updateYamlById', yaml);
         await updateYamlById(plugin, yaml.id, file, yaml);
     }
 }
 
 function refresh(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string) {
-    // plugin.updateOverviewView();
-    console.log('refresh', changedSection);
     if (file) {
         contentEl = contentEl.parentElement as HTMLElement;
     }

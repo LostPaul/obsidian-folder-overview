@@ -4,6 +4,8 @@ import { overviewSettings, FolderOverview } from './FolderOverview';
 import { DEFAULT_SETTINGS, SettingsTab } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
+import FolderNotesPlugin from '../../main';
+import { FolderNotesSettings } from '../../settings/SettingsTab';
 
 export default class FolderOverviewPlugin extends Plugin {
 	settings: overviewSettings;
@@ -55,12 +57,12 @@ export default class FolderOverviewPlugin extends Plugin {
 			if (this.app.workspace.layoutReady) {
 				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
 				await folderOverview.create(this, parseYaml(source), el, ctx);
-				this.updateOverviewView();
+				this.updateOverviewView(this);
 			} else {
 				this.app.workspace.onLayoutReady(async () => {
 					const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
 					await folderOverview.create(this, parseYaml(source), el, ctx);
-					this.updateOverviewView();
+					this.updateOverviewView(this);
 				});
 			}
 		} catch (e) {
@@ -99,12 +101,14 @@ export default class FolderOverviewPlugin extends Plugin {
 		workspace.revealLeaf(leaf);
 	}
 
-	async updateOverviewView() {
-		// console.log('updating overview view');
-		const { workspace } = this.app;
-		const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
-		if (!leaf) return;
-		const view = leaf.view as any as FolderOverviewView;
-		view.display(view.contentEl, view.yaml, this, view.defaultSettings, view.display, undefined, undefined, view.activeFile, this.settingsTab, view.modal, 'all');
-	}
+	updateOverviewView = updateOverviewView;
+}
+
+export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNotesPlugin, newYaml?: overviewSettings) {
+	const { workspace } = plugin.app;
+	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
+	if (!leaf) return;
+	const view = leaf.view as any as FolderOverviewView;
+	const yaml = view.yaml.id === '' ?  view.yaml : newYaml;
+	view.display(view.contentEl, yaml ?? view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'all');
 }

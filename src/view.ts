@@ -65,7 +65,6 @@ export class FolderOverviewView extends ItemView {
         modal?: FolderOverviewSettings,
         changedSection?: string | null | undefined
     ) {
-        console.log('view changedSection', changedSection);
         this.contentEl = contentEl;
         this.yaml = yaml;
         this.defaultSettings = defaultSettings;
