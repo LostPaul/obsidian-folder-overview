@@ -19,7 +19,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
             const lineText = editor.getLine(line);
             if (lineText.trim() === '' || lineText.trim() === '>') {
                 if (!checking) {
-                    let json = Object.assign({}, this.plugin.settings.defaultOverview);
+                    let json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
                     json.id = crypto.randomUUID();
                     const yaml = stringifyYaml(json)
                     if (lineText.trim() === '') {
