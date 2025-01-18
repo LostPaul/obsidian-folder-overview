@@ -505,6 +505,8 @@ export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOve
 		}
 	}
 
+	if (!title) { return 'Couldn\'t find title'; }
+
 	if (sourceFolder && sourceFolderPath !== '/') {
 		title = title.replace('{{folderName}}', sourceFolder.name);
 	} else if (sourceFolderPath == '/') {
