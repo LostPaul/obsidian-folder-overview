@@ -3,7 +3,7 @@
     "name": "Folder overview",
     "version": "0.1.2",
     "minAppVersion": "0.15.0",
-    "description": "The plugin provides a dynamic overview of your vault or folders in the format of a code block.",
+    "description": "This provides a dynamic overview of your vault or folders in the format of a code block.",
     "author": "Lost Paul",
     "authorUrl": "https://github.com/LostPaul",
     "fundingUrl": "https://ko-fi.com/paul305844",
