@@ -6,7 +6,7 @@ This plugin provides a dynamic overview of your vault or folders in the format o
 The documentation of the plugin can be found here: https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/
 
 ## Showcase
-https://github.com/user-attachments/assets/cb55ede4-a828-4f4a-b5c6-1d021011d4c5
+![folder-overview-showcase](https://github.com/user-attachments/assets/b38560c7-82cb-4767-b6ba-8dc1b9ed6dcd)
 
 ## Support the development of the plugin
 
