@@ -54,17 +54,11 @@ export default class FolderOverviewPlugin extends Plugin {
 		});
 
 		try {
-			if (this.app.workspace.layoutReady) {
+			this.app.workspace.onLayoutReady(async () => {
 				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
 				await folderOverview.create(this, parseYaml(source), el, ctx);
 				this.updateOverviewView(this);
-			} else {
-				this.app.workspace.onLayoutReady(async () => {
-					const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
-					await folderOverview.create(this, parseYaml(source), el, ctx);
-					this.updateOverviewView(this);
-				});
-			}
+			});
 		} catch (e) {
 			new Notice('Error creating folder overview (folder notes plugin) - check console for more details');
 			console.error(e);
