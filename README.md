@@ -1,4 +1,4 @@
-# Obsidian folder overview
+# Folder overview for [Obsidian](https://obsidian.md/)
 
 The plugin provides a dynamic overview of your vault or folders in the format of a code block.
 
