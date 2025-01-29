@@ -5,7 +5,7 @@ import { Menu, Editor, MarkdownView, stringifyYaml } from 'obsidian';
 export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNotesPlugin) {
     plugin.addCommand({
         id: 'open-folder-overview-settings',
-        name: 'Open Folder Overview settings',
+        name: 'Open folder overview settings',
         callback: () => {
             plugin.activateOverviewView();
         }
