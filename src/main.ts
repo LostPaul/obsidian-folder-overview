@@ -17,17 +17,11 @@ export default class FolderOverviewPlugin extends Plugin {
 		this.settingsTab.display();
 		registerOverviewCommands(this);
 
-		if (this.app.workspace.layoutReady) {
+		this.app.workspace.onLayoutReady(async () => {
 			this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
 				return new FolderOverviewView(leaf, this);
 			});
-		} else {
-			this.app.workspace.onLayoutReady(async () => {
-				this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
-					return new FolderOverviewView(leaf, this);
-				});
-			});
-		}
+		});
 
 		this.registerMarkdownCodeBlockProcessor('folder-overview', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			this.handleOverviewBlock(source, el, ctx);

@@ -224,13 +224,9 @@ export class FolderOverview {
 			renderListOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
 		} else if (this.yaml.style === 'explorer') {
 			const fileExplorerOverview = new FileExplorerOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
-			if (this.plugin.app.workspace.layoutReady) {
+			this.plugin.app.workspace.onLayoutReady(async () => {
 				await fileExplorerOverview.renderFileExplorer();
-			} else {
-				this.plugin.app.workspace.onLayoutReady(async () => {
-					await fileExplorerOverview.renderFileExplorer();
-				});
-			}
+			});
 		}
 
 		const overviewListEl = el.childNodes[0].childNodes[1];
