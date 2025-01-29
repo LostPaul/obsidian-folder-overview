@@ -104,6 +104,8 @@ export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNo
 	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 	if (!leaf) return;
 	const view = leaf.view as any as FolderOverviewView;
+	if (!view) return;
+	if (!view.yaml) return;
 	const yaml = view.yaml.id === '' ?  view.yaml : newYaml;
 	view.display(view.contentEl, yaml ?? view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'all');
 }
