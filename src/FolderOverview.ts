@@ -8,6 +8,7 @@ import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
+import { title } from 'process';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
@@ -226,19 +227,21 @@ export class FolderOverview {
 			const fileExplorerOverview = new FileExplorerOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
 			this.plugin.app.workspace.onLayoutReady(async () => {
 				await fileExplorerOverview.renderFileExplorer();
+				const overviewListEl = el.childNodes[0].childNodes[1];
+				if (overviewListEl && overviewListEl.childNodes.length === 0) {
+					const overview = el.childNodes[0];
+					if (!overview.childNodes[2]) {
+						if (this.plugin.app.workspace.layoutReady) {
+							return this.addEditButton(root);
+						}
+					}
+				}
 			});
 		}
 
-		const overviewListEl = el.childNodes[0].childNodes[1];
-		if (overviewListEl && overviewListEl.childNodes.length === 0) {
-			if (this.yaml.style === 'explorer') {
-				const overview = el.childNodes[0];
-				if (!overview.childNodes[2]) {
-					if (this.plugin.app.workspace.layoutReady) {
-						return this.addEditButton(root);
-					}
-				}
-			} else {
+		if (this.yaml.style !== 'explorer') {
+			const overviewListEl = el.childNodes[0].childNodes[1];
+			if (overviewListEl && overviewListEl.childNodes.length === 0) {
 				if (this.plugin.app.workspace.layoutReady) {
 					return this.addEditButton(root);
 				}
@@ -487,28 +490,16 @@ export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesP
 
 export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null) {
 	const sourceFolderPath = overview.folderPath.trim();
-	let sourceFolder: TFolder | undefined | null;
-	let title = overview.title;
-
-	if (sourceFolderPath !== '/') {
-		if (sourceFolderPath === '') {
-			sourceFolder = folder;
-		} else {
-			const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
+	const title = overview.title;
+	if (folder?.path === '/' && sourceFolderPath === '' || sourceFolderPath === '/') {
+		return title.replace('{{folderName}}', 'Vault');
+	} else if (folder && sourceFolderPath == '') {
+		return title.replace('{{folderName}}', folder.name);
+	} else if (sourceFolderPath !== '') {
+		const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
 			if (newSourceFolder instanceof TFolder) {
-				sourceFolder = newSourceFolder;
+				return title.replace('{{folderName}}', newSourceFolder.name);
 			}
-		}
-	}
-
-	if (!title) { return 'Couldn\'t find title'; }
-
-	if (sourceFolder && sourceFolderPath !== '/') {
-		title = title.replace('{{folderName}}', sourceFolder.name);
-	} else if (sourceFolderPath == '/') {
-		title = title.replace('{{folderName}}', 'Vault');
-	} else {
-		title = title.replace('{{folderName}}', '');
 	}
 
 	return title;
