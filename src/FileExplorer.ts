@@ -265,7 +265,7 @@ export class FileExplorerOverview {
             }
         }
 
-        if (!child.collapsed) {
+        if (!child.collapsed || !yaml.includeTypes.includes('folder')) {
             if (yaml.alwaysCollapse) {
                 child.collapsed = true;
             }
