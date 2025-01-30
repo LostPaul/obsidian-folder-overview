@@ -62,6 +62,7 @@ function debounce(func: Function, wait: number) {
 }
 
 export function addFolderList(plugin: FolderOverviewPlugin | FolderNotesPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], folder: TFolder, folderOverview: FolderOverview) {
+    folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
     const isFirstLevelSub = folder.path.split('/').length === folderOverview.yaml.folderPath.split('/').length + 1;
     if (!folderOverview.yaml.showEmptyFolders && folder.children.length === 0 && !folderOverview.yaml.onlyIncludeSubfolders) {
         return;
@@ -157,6 +158,7 @@ function addFileList(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTM
         }
     }
 
+    folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
     const listItem = list.createEl('li', { cls: 'folder-overview-list file-link' });
     listItem.oncontextmenu = (e) => {
         e.stopImmediatePropagation();

@@ -227,26 +227,10 @@ export class FolderOverview {
 			const fileExplorerOverview = new FileExplorerOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
 			this.plugin.app.workspace.onLayoutReady(async () => {
 				await fileExplorerOverview.renderFileExplorer();
-				const overviewListEl = el.childNodes[0].childNodes[1];
-				if (overviewListEl && overviewListEl.childNodes.length === 0) {
-					const overview = el.childNodes[0];
-					if (!overview.childNodes[2]) {
-						if (this.plugin.app.workspace.layoutReady) {
-							return this.addEditButton(root);
-						}
-					}
-				}
 			});
 		}
-
-		if (this.yaml.style !== 'explorer') {
-			const overviewListEl = el.childNodes[0].childNodes[1];
-			if (overviewListEl && overviewListEl.childNodes.length === 0) {
-				if (this.plugin.app.workspace.layoutReady) {
-					return this.addEditButton(root);
-				}
-			}
-		}
+		
+		this.addEditButton(root);
 	}
 
 	addEditButton(root: HTMLElement) {

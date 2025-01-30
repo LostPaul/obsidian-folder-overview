@@ -68,3 +68,10 @@
 .overview-setting-item-fv .setting-item {
     padding: 0;
 }
+
+
+/* remove edit button if the list isn't empty */
+
+.folder-overview-container.fv-remove-edit-button .folder-overview-edit-button {
+    display: none;
+}

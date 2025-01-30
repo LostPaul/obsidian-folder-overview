@@ -201,6 +201,7 @@ export class FileExplorerOverview {
         if (excludedFolder?.excludeFromFolderOverview) { return; }
 
         if (yaml.includeTypes.includes('folder')) {
+            folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
             folderElement = childrenElement.createDiv({
                 cls: 'tree-item nav-folder',
             });
@@ -322,6 +323,8 @@ export class FileExplorerOverview {
             const allTypes = ['markdown', 'md', 'canvas', 'pdf', ...imageTypes, ...videoTypes, ...audioTypes];
             if (!allTypes.includes(extension) && !includeTypes.includes('other')) return;
         }
+
+        folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
 
         const fileElement = childrenElement.createDiv({
             cls: 'tree-item nav-file',
