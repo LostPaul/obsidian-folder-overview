@@ -72,3 +72,11 @@ jobs:
           artifacts: "release/main.js,release/styles.css,release/manifest.json"
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
+
+      # Step to remove the built files from the main branch
+      - name: Remove built files from main branch
+        run: |
+          git checkout main  # Checkout the main branch
+          git rm -f src/obsidian-folder-overview/main.js src/obsidian-folder-overview/styles.css  # Remove the files
+          git commit -m "Remove main.js and styles.css after release"  # Commit the removal
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/LostPaul/obsidian-folder-overview.git HEAD:main  # Push the change to main
