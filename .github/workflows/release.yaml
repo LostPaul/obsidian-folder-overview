@@ -1,0 +1,55 @@
+name: Plugin Release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Extract branch name
+        id: extract_branch
+        run: echo "BRANCH_NAME=$(git branch -r --contains ${GITHUB_SHA} | grep -v 'detached' | sed 's|origin/||' | xargs)" >> $GITHUB_ENV
+
+      - name: Checkout main branch
+        run: |
+          git checkout main
+          git pull origin main
+
+      - name: Update manifest.json
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          jq --arg version "$VERSION" '.version = $version' manifest.json > manifest-temp.json
+          mv manifest-temp.json manifest.json
+
+      - name: Commit and push manifest.json update
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add manifest.json
+          git commit -m "Update manifest.json to version $VERSION"
+          git push origin main
+
+      - name: Checkout original branch
+        run: |
+          git checkout ${{ env.BRANCH_NAME }}
+          git pull origin ${{ env.BRANCH_NAME }}
+
+      - name: Prepare files for release
+        run: |
+          mkdir -p release
+          cp main.js styles.css manifest.json release/
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          artifacts: "release/main.js,release/styles.css,release/manifest.json"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
