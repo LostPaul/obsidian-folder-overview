@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build"
+        required: true
+
+permissions:
+  contents: write  # Allow write access to repository contents
 
 jobs:
   build:
@@ -35,7 +43,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add manifest.json
           git commit -m "Update manifest.json to version $VERSION"
-          git push origin main
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/LostPaul/obsidian-folder-overview.git HEAD:main  # Use PAT for push
 
       - name: Checkout original branch
         run: |
