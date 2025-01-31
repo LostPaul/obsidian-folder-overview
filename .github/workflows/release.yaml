@@ -20,16 +20,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Make sure we fetch the full history to access all tags and branches
 
       - name: Extract branch name
         id: extract_branch
         run: echo "BRANCH_NAME=$(git branch -r --contains ${GITHUB_SHA} | grep -v 'detached' | sed 's|origin/||' | xargs)" >> $GITHUB_ENV
 
+      - name: Fetch latest branches
+        run: |
+          git fetch --all  # Fetch all remote branches to ensure we have all references
+
       - name: Checkout main branch
         run: |
-          git fetch origin  # Make sure to fetch the latest from the remote
-          git checkout main  # Checkout the main branch
+          git checkout main  # Checkout the 'main' branch
+          git pull origin main  # Ensure we have the latest changes from 'main'
 
       - name: Update manifest.json
         run: |
@@ -38,11 +42,12 @@ jobs:
           mv manifest-temp.json manifest.json
 
       - name: Check if manifest.json is changed
+        id: check_changes
         run: |
           git diff --exit-code manifest.json || echo "manifest.json has changes"
 
       - name: Commit and push manifest.json update
-        if: steps.Check-if-manifest-changed.outputs.changed == 'true'  # Only run if manifest.json has changes
+        if: steps.check_changes.outputs.changed == 'true'  # Only run if manifest.json has changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
