@@ -28,8 +28,8 @@ jobs:
 
       - name: Checkout main branch
         run: |
-          git checkout main
-          git pull origin main
+          git fetch origin  # Make sure to fetch the latest from the remote
+          git checkout main  # Checkout the main branch
 
       - name: Update manifest.json
         run: |
@@ -47,6 +47,7 @@ jobs:
 
       - name: Checkout original branch
         run: |
+          git fetch origin
           git checkout ${{ env.BRANCH_NAME }}
           git pull origin ${{ env.BRANCH_NAME }}
 
