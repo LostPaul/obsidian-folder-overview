@@ -205,6 +205,7 @@ export class FileExplorerOverview {
             folderElement = childrenElement.createDiv({
                 cls: 'tree-item nav-folder',
             });
+
             folderTitle = folderElement.createDiv({
                 cls: 'tree-item-self is-clickable nav-folder-title',
                 attr: {
@@ -242,20 +243,20 @@ export class FileExplorerOverview {
             folderTitle.addEventListener('dragover', e => {
                 e.preventDefault();
                 const { draggable } = plugin.app.dragManager;
-                if (draggable && draggable.file instanceof TFolder) {
+                if (draggable) {
                     folderElement?.classList.add('is-being-dragged-over');
                     plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.name }));
                 }
+
             });
 
             folderTitle.addEventListener('dragleave', e => {
                 folderElement?.classList.remove('is-being-dragged-over');
             });
 
-            // handle the drop event
             folderTitle.addEventListener('drop', e => {
                 const { draggable } = plugin.app.dragManager;
-                if (draggable && draggable.file instanceof TFolder) {
+                if (draggable && draggable.file) {
                     plugin.app.fileManager.renameFile(draggable.file, child.path + '/' + draggable.file.name);
                 }
             });
@@ -305,11 +306,12 @@ export class FileExplorerOverview {
     async createFileEL(plugin: FolderOverviewPlugin | FolderNotesPlugin, child: TFile, folderOverview: FolderOverview, childrenElement: HTMLElement) {
         const yaml = folderOverview.yaml;
         const pathBlacklist = folderOverview.pathBlacklist;
-
+    
         if (pathBlacklist.includes(child.path) && !yaml.showFolderNotes) { return; }
+    
         const extension = child.extension.toLowerCase() == 'md' ? 'markdown' : child.extension.toLowerCase();
         const includeTypes = yaml.includeTypes;
-
+    
         if (includeTypes.length > 0 && !includeTypes.includes('all')) {
             if ((extension === 'md' || extension === 'markdown') && !includeTypes.includes('markdown')) return;
             if (extension === 'canvas' && !includeTypes.includes('canvas')) return;
@@ -323,65 +325,76 @@ export class FileExplorerOverview {
             const allTypes = ['markdown', 'md', 'canvas', 'pdf', ...imageTypes, ...videoTypes, ...audioTypes];
             if (!allTypes.includes(extension) && !includeTypes.includes('other')) return;
         }
-
+    
         folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
-
+    
         const fileElement = childrenElement.createDiv({
             cls: 'tree-item nav-file',
         });
-
+    
         const fileTitle = fileElement.createDiv({
             cls: 'tree-item-self is-clickable nav-file-title pointer-cursor',
             attr: {
                 'data-path': child.path,
                 'draggable': 'true'
             },
-        })
-
+        });
+    
+        fileTitle.addEventListener('dragstart', e => {
+            const dragManager = plugin.app.dragManager;
+            const dragData = dragManager.dragFile(e, child);
+            dragManager.onDragStart(e, dragData);
+            fileTitle.classList.add('is-being-dragged');
+        });
+    
+        fileTitle.addEventListener('dragend', () => {
+            fileTitle.classList.remove('is-being-dragged');
+        });
+    
         fileTitle.addEventListener('dragover', e => {
             e.preventDefault();
             const { draggable } = plugin.app.dragManager;
-            if (draggable && draggable.file instanceof TFolder) {
-                plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.parent?.name || '' }));
-                const folderEL = folderOverview.getElFromOverview(child.parent?.path || '')
-                if (folderEL) {
-                    folderEL.parentElement?.classList.add('is-being-dragged-over');
-                }
+            if (draggable) {
+                plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.parent?.name || plugin.app.vault.getName() }));
+                fileElement.parentElement?.parentElement?.classList.add('is-being-dragged-over');
+
             }
         });
-
-        fileTitle.addEventListener('dragleave', e => {
-            const folderEL = folderOverview.getElFromOverview(child.parent?.path || '')
-            if (folderEL) {
-                folderEL.parentElement?.classList.remove('is-being-dragged-over');
-            }
+    
+        fileTitle.addEventListener('dragleave', () => {
+            fileElement.parentElement?.parentElement?.classList.remove('is-being-dragged-over');
         });
-
+    
         fileTitle.addEventListener('drop', e => {
+            e.preventDefault();
             const { draggable } = plugin.app.dragManager;
-            if (draggable && draggable.file instanceof TFolder) {
-                plugin.app.fileManager.renameFile(draggable.file, child.parent?.path + '/' + draggable.file.name);
+            if (draggable?.file) {
+                const targetFolder = child.parent?.path || '';
+                if (targetFolder) {
+                    plugin.app.fileManager.renameFile(draggable.file, `${targetFolder}/${draggable.file.name}`);
+                }
+                fileElement.parentElement?.parentElement?.classList.remove('is-being-dragged-over');
             }
         });
-
+    
         fileTitle.onclick = () => {
             plugin.app.workspace.openLinkText(child.path, child.path, true);
-        }
-
+        };
+    
         fileTitle.oncontextmenu = (e) => {
             folderOverview.fileMenu(child, e);
-        }
-
+        };
+    
         fileTitle.createDiv({
             cls: 'tree-item-inner nav-file-title-content',
             text: child.basename,
         });
-
+    
         if (child.extension !== 'md' && !yaml.disableFileTag) {
             fileTitle.createDiv({
                 cls: 'nav-file-tag',
                 text: child.extension
             });
         }
-    }
+    }    
 }

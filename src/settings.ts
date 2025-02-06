@@ -27,6 +27,8 @@ export const DEFAULT_SETTINGS: overviewSettings = {
     showFolderNotes: false,
     disableCollapseIcon: true,
     alwaysCollapse: false,
+    autoSync: true,
+    allowDragAndDrop: true,
 }
 
 export class SettingsTab extends PluginSettingTab {

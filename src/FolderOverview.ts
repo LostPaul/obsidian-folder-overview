@@ -29,6 +29,8 @@ export type overviewSettings = {
 	showFolderNotes: boolean;
 	disableCollapseIcon: boolean;
 	alwaysCollapse: boolean;
+	autoSync: boolean;
+	allowDragAndDrop: boolean;
 };
 
 export class FolderOverview {
@@ -80,6 +82,8 @@ export class FolderOverview {
 			showFolderNotes: yaml?.showFolderNotes ?? defaultSettings.showFolderNotes,
 			disableCollapseIcon: yaml?.disableCollapseIcon ?? defaultSettings.disableCollapseIcon,
 			alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
+			autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
+			allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop
 		};
 
 
