@@ -19,6 +19,7 @@ jobs:
         with:
           repository: LostPaul/obsidian-folder-notes
           fetch-depth: 0
+          submodules: recursive
           path: folder-notes  # Ensures it's in the correct folder
 
       - name: Run npm install in folder-notes
