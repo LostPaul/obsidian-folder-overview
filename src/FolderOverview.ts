@@ -283,6 +283,8 @@ export class FolderOverview {
 			yaml.sortByAsc = this.defaultSettings.sortByAsc ?? false;
 		}
 
+		const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
 		files.sort((a, b) => {
 			if (a instanceof TFolder && !(b instanceof TFolder)) {
 				return -1;
@@ -293,8 +295,8 @@ export class FolderOverview {
 
 			if (a instanceof TFolder && b instanceof TFolder) {
 				return yaml.sortByAsc
-					? a.name.localeCompare(b.name)
-					: b.name.localeCompare(a.name);
+					? collator.compare(a.name, b.name)
+					: collator.compare(b.name, a.name);
 			}
 
 			if (a instanceof TFile && b instanceof TFile) {
@@ -304,8 +306,8 @@ export class FolderOverview {
 					return yaml.sortByAsc ? a.stat.mtime - b.stat.mtime : b.stat.mtime - a.stat.mtime;
 				} else if (yaml.sortBy === 'name') {
 					return yaml.sortByAsc
-						? a.basename.localeCompare(b.basename)
-						: b.basename.localeCompare(a.basename);
+						? collator.compare(a.basename, b.basename)
+						: collator.compare(b.basename, a.basename);
 				}
 			}
 
@@ -314,6 +316,7 @@ export class FolderOverview {
 
 		return files;
 	}
+
 
 	getAllFiles(files: TAbstractFile[], sourceFolderPath: string, depth: number) {
 		const allFiles: TAbstractFile[] = [];
