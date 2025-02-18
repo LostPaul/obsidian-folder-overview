@@ -104,7 +104,9 @@ export class FolderOverview {
 	}
 
 	handleVaultChange(eventType: string) {
-		this.emit('vault-change', eventType);
+		if (this.yaml.autoSync) {
+			this.emit('vault-change', eventType);
+		}
 	}
 
 	disconnectListeners() {
@@ -233,7 +235,7 @@ export class FolderOverview {
 				await fileExplorerOverview.renderFileExplorer();
 			});
 		}
-		
+
 		this.addEditButton(root);
 	}
 
@@ -485,9 +487,9 @@ export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOve
 		return title.replace('{{folderName}}', folder.name);
 	} else if (sourceFolderPath !== '') {
 		const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
-			if (newSourceFolder instanceof TFolder) {
-				return title.replace('{{folderName}}', newSourceFolder.name);
-			}
+		if (newSourceFolder instanceof TFolder) {
+			return title.replace('{{folderName}}', newSourceFolder.name);
+		}
 	}
 
 	return title;

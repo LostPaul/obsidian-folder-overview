@@ -39,6 +39,8 @@ export class FolderOverviewSettings extends Modal {
 				showFolderNotes: yaml?.showFolderNotes ?? defaultSettings.showFolderNotes,
 				disableCollapseIcon: yaml?.disableCollapseIcon ?? defaultSettings.disableCollapseIcon,
 				alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
+				autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
+				allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop,
 			}
 		}
 		if (ctx) {
