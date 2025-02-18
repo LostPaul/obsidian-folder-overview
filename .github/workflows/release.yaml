@@ -29,12 +29,12 @@ jobs:
           cd folder-notes
           npm install
           npm run fv-build
-
+          
       # Verify that the built files exist
       - name: Check built files
         run: |
           ls -la folder-notes/src/obsidian-folder-overview/
-
+          
       # Checkout folder-overview repository on the main branch
       - name: Checkout folder-overview
         uses: actions/checkout@v3
@@ -49,21 +49,23 @@ jobs:
         run: |
           cd folder-overview
           git checkout main || git checkout -b main
-
+          
       # Copy the built files from folder-notes to folder-overview
       - name: Copy built files to folder-overview
         run: |
           cp folder-notes/src/obsidian-folder-overview/main.js \
              folder-notes/src/obsidian-folder-overview/styles.css folder-overview/
-
+             
       # Commit and push built files only if they changed
       - name: Commit and push built files
         run: |
           cd folder-overview
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add main.js styles.css
-
+          
+          # Force add the files (to bypass .gitignore)
+          git add -f main.js styles.css
+          
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
