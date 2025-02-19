@@ -1,4 +1,4 @@
-name: Build and Push to Folder Overview
+name: Plugin Release
 
 on:
   push:
@@ -10,94 +10,73 @@ on:
         description: "Tag to build"
         required: true
 
+permissions:
+  contents: write  # Allow write access to repository contents
+
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     steps:
-      # Checkout folder-notes repository
-      - name: Checkout folder-notes
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          repository: LostPaul/obsidian-folder-notes
-          fetch-depth: 0
-          submodules: recursive
-          path: folder-notes
+          fetch-depth: 0  # Make sure we fetch the full history to access all tags and branches
 
-      # Install dependencies and run the fv-build process
-      - name: Run npm install and build in folder-notes
-        run: |
-          cd folder-notes
-          npm install
-          npm run fv-build
-          
-      # Verify that the built files exist
-      - name: Check built files
-        run: |
-          ls -la folder-notes/src/obsidian-folder-overview/
-          
-      # Checkout folder-overview repository on the main branch
-      - name: Checkout folder-overview
-        uses: actions/checkout@v3
-        with:
-          repository: LostPaul/obsidian-folder-overview
-          token: ${{ secrets.PAT }}
-          ref: main  # Ensures we are on the main branch
-          path: folder-overview
+      - name: Extract branch name
+        id: extract_branch
+        run: echo "BRANCH_NAME=$(git branch --show-current)" >> $GITHUB_ENV
 
-      # Ensure we're on the main branch
-      - name: Ensure we are on main branch
+      - name: Fetch all remote branches
         run: |
-          cd folder-overview
-          git checkout main || git checkout -b main
-          
-      # Copy the built files from folder-notes to folder-overview
-      - name: Copy built files to folder-overview
+          git fetch --all  # Fetch all remote branches to ensure we have all references
+
+      - name: Checkout main branch
         run: |
-          cp folder-notes/src/obsidian-folder-overview/main.js \
-             folder-notes/src/obsidian-folder-overview/styles.css folder-overview/
-             
-      # Commit and push built files only if they changed
-      - name: Commit and push built files
+          git checkout main  # Checkout the 'main' branch
+          git pull origin main  # Ensure we have the latest changes from 'main'
+
+      - name: Update manifest.json
         run: |
-          cd folder-overview
+          VERSION=${GITHUB_REF#refs/tags/}
+          jq --arg version "$VERSION" '.version = $version' manifest.json > manifest-temp.json
+          mv manifest-temp.json manifest.json
+
+      - name: Check if manifest.json is changed
+        id: check_changes
+        run: |
+          git diff --exit-code manifest.json || echo "manifest.json has changes"
+
+      - name: Commit and push manifest.json update
+        if: steps.check_changes.outputs.changed == 'true'  # Only run if manifest.json has changes
+        run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
-          # Force add the files (to bypass .gitignore)
-          git add -f main.js styles.css
-          
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "Add built files for release"
-            git push origin main
-          fi
+          git add manifest.json
+          git commit -m "Update manifest.json to version $VERSION"
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/LostPaul/obsidian-folder-overview.git HEAD:main  # Use PAT for push
 
-      # Trigger release workflow in folder-overview
-      - name: Trigger release workflow in folder-overview
+      - name: Checkout original branch
         run: |
-          curl -X POST -H "Authorization: token ${{ secrets.PAT }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/LostPaul/obsidian-folder-overview/actions/workflows/release.yml/dispatches \
-          -d '{"ref": "main", "inputs": {"tag": "${{ github.ref_name }}"}}'
+          git fetch origin  # Make sure to fetch the latest from origin
+          git checkout ${{ env.BRANCH_NAME }}  # Checkout the original branch based on the variable
+          git pull origin ${{ env.BRANCH_NAME }}  # Ensure we have the latest changes from the branch
 
-  cleanup:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout folder-overview again for cleanup
-      - name: Checkout folder-overview for cleanup
-        uses: actions/checkout@v3
+      - name: Prepare files for release
+        run: |
+          mkdir -p release
+          cp main.js styles.css manifest.json release/
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1.12.0
         with:
-          repository: LostPaul/obsidian-folder-overview
-          token: ${{ secrets.PAT }}
-          ref: main
-          path: folder-overview
+          artifacts: "release/main.js,release/styles.css,release/manifest.json"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
 
-      # Remove built files from main branch after release
-      - name: Remove built files after release
+      # Step to remove the built files from the main branch
+      - name: Remove built files from main branch
         run: |
-          cd folder-overview
-          git rm -f main.js styles.css || true
-          git commit -m "Cleanup built files after release" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
+          git checkout main  # Checkout the main branch
+          git rm -f src/obsidian-folder-overview/main.js src/obsidian-folder-overview/styles.css  # Remove the files
+          git commit -m "Remove main.js and styles.css after release"  # Commit the removal
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/LostPaul/obsidian-folder-overview.git HEAD:main  # Push the change to main
