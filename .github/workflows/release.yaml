@@ -1,57 +1,82 @@
-# https://github.com/SilentVoid13/Templater/blob/master/.github/workflows/release.yml
-name: Plugin release
+name: Plugin Release
+
 on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build"
+        required: true
+
+permissions:
+  contents: write  # Allow write access to repository contents
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Make sure we fetch the full history to access all tags and branches
 
       - name: Extract branch name
         id: extract_branch
-        run: echo "BRANCH_NAME=$(git branch -r --contains ${GITHUB_SHA} | grep -v 'detached' | sed 's|origin/||' | xargs)" >> $GITHUB_ENV
+        run: echo "BRANCH_NAME=$(git branch --show-current)" >> $GITHUB_ENV
 
-      # Checkout the main branch to update manifest.json
-      - name: Checkout main branch to update manifest
+      - name: Fetch all remote branches
         run: |
-          git checkout main
-          git pull origin main
+          git fetch --all  # Fetch all remote branches to ensure we have all references
 
-      - name: Update manifest.json in main branch
+      - name: Checkout main branch
+        run: |
+          git checkout main  # Checkout the 'main' branch
+          git pull origin main  # Ensure we have the latest changes from 'main'
+
+      - name: Update manifest.json
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           jq --arg version "$VERSION" '.version = $version' manifest.json > manifest-temp.json
           mv manifest-temp.json manifest.json
 
-      - name: Commit and push manifest.json changes in main
+      - name: Check if manifest.json is changed
+        id: check_changes
+        run: |
+          git diff --exit-code manifest.json || echo "manifest.json has changes"
+
+      - name: Commit and push manifest.json update
+        if: steps.check_changes.outputs.changed == 'true'  # Only run if manifest.json has changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add manifest.json
           git commit -m "Update manifest.json to version $VERSION"
-          git push origin main
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/LostPaul/obsidian-folder-overview.git HEAD:main  # Use PAT for push
 
-      # Switch back to the branch that triggered the workflow
       - name: Checkout original branch
         run: |
-          git checkout ${{ env.BRANCH_NAME }}
-          git pull origin ${{ env.BRANCH_NAME }}
+          git fetch origin  # Make sure to fetch the latest from origin
+          git checkout ${{ env.BRANCH_NAME }}  # Checkout the original branch based on the variable
+          git pull origin ${{ env.BRANCH_NAME }}  # Ensure we have the latest changes from the branch
 
-      - name: npm build
+      - name: Prepare files for release
         run: |
-          npm install
-          npm run build --if-present
+          mkdir -p release
+          cp main.js styles.css manifest.json release/
 
-      - name: Create Plugin release
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1.12.0
         with:
-          artifacts: "main.js,manifest.json,styles.css"
+          artifacts: "release/main.js,release/styles.css,release/manifest.json"
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
+
+      # Step to remove the built files from the main branch
+      - name: Remove built files from main branch
+        run: |
+          git checkout main  # Checkout the main branch
+          git rm -f src/obsidian-folder-overview/main.js src/obsidian-folder-overview/styles.css  # Remove the files
+          git commit -m "Remove main.js and styles.css after release"  # Commit the removal
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/LostPaul/obsidian-folder-overview.git HEAD:main  # Push the change to main

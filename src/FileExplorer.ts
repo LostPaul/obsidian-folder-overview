@@ -201,14 +201,15 @@ export class FileExplorerOverview {
         if (excludedFolder?.excludeFromFolderOverview) { return; }
 
         if (yaml.includeTypes.includes('folder')) {
+            folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
             folderElement = childrenElement.createDiv({
                 cls: 'tree-item nav-folder',
             });
+
             folderTitle = folderElement.createDiv({
                 cls: 'tree-item-self is-clickable nav-folder-title',
                 attr: {
-                    'data-path': child.path,
-                    'draggable': 'true'
+                    'data-path': child.path
                 },
             })
 
@@ -226,45 +227,47 @@ export class FileExplorerOverview {
                 }
             }
 
-            folderTitle.draggable = true;
-            folderTitle.addEventListener('dragstart', e => {
-                const dragManager = plugin.app.dragManager;
-                const dragData = dragManager.dragFolder(e, child);
-                dragManager.onDragStart(e, dragData);
-                folderTitle?.classList.add('is-being-dragged');
-            });
+            if (yaml.allowDragAndDrop) {
+                folderTitle.draggable = true;
+                folderTitle.addEventListener('dragstart', e => {
+                    const dragManager = plugin.app.dragManager;
+                    const dragData = dragManager.dragFolder(e, child);
+                    dragManager.onDragStart(e, dragData);
+                    folderTitle?.classList.add('is-being-dragged');
+                });
 
-            folderTitle.addEventListener('dragend', e => {
-                folderTitle?.classList.remove('is-being-dragged');
-            });
+                folderTitle.addEventListener('dragend', e => {
+                    folderTitle?.classList.remove('is-being-dragged');
+                });
 
-            folderTitle.addEventListener('dragover', e => {
-                e.preventDefault();
-                const { draggable } = plugin.app.dragManager;
-                if (draggable && draggable.file instanceof TFolder) {
-                    folderElement?.classList.add('is-being-dragged-over');
-                    plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.name }));
-                }
-            });
+                folderTitle.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const { draggable } = plugin.app.dragManager;
+                    if (draggable) {
+                        folderElement?.classList.add('is-being-dragged-over');
+                        plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.name }));
+                    }
 
-            folderTitle.addEventListener('dragleave', e => {
-                folderElement?.classList.remove('is-being-dragged-over');
-            });
+                });
 
-            // handle the drop event
-            folderTitle.addEventListener('drop', e => {
-                const { draggable } = plugin.app.dragManager;
-                if (draggable && draggable.file instanceof TFolder) {
-                    plugin.app.fileManager.renameFile(draggable.file, child.path + '/' + draggable.file.name);
-                }
-            });
+                folderTitle.addEventListener('dragleave', e => {
+                    folderElement?.classList.remove('is-being-dragged-over');
+                });
+
+                folderTitle.addEventListener('drop', e => {
+                    const { draggable } = plugin.app.dragManager;
+                    if (draggable && draggable.file) {
+                        plugin.app.fileManager.renameFile(draggable.file, child.path + '/' + draggable.file.name);
+                    }
+                });
+            }
 
             folderTitle.oncontextmenu = (e) => {
                 folderOverview.folderMenu(child, e);
             }
         }
 
-        if (!child.collapsed) {
+        if (!child.collapsed || !yaml.includeTypes.includes('folder')) {
             if (yaml.alwaysCollapse) {
                 child.collapsed = true;
             }
@@ -306,6 +309,7 @@ export class FileExplorerOverview {
         const pathBlacklist = folderOverview.pathBlacklist;
 
         if (pathBlacklist.includes(child.path) && !yaml.showFolderNotes) { return; }
+
         const extension = child.extension.toLowerCase() == 'md' ? 'markdown' : child.extension.toLowerCase();
         const includeTypes = yaml.includeTypes;
 
@@ -323,6 +327,8 @@ export class FileExplorerOverview {
             if (!allTypes.includes(extension) && !includeTypes.includes('other')) return;
         }
 
+        folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
+
         const fileElement = childrenElement.createDiv({
             cls: 'tree-item nav-file',
         });
@@ -331,43 +337,56 @@ export class FileExplorerOverview {
             cls: 'tree-item-self is-clickable nav-file-title pointer-cursor',
             attr: {
                 'data-path': child.path,
-                'draggable': 'true'
             },
-        })
+        });
 
-        fileTitle.addEventListener('dragover', e => {
-            e.preventDefault();
-            const { draggable } = plugin.app.dragManager;
-            if (draggable && draggable.file instanceof TFolder) {
-                plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.parent?.name || '' }));
-                const folderEL = folderOverview.getElFromOverview(child.parent?.path || '')
-                if (folderEL) {
-                    folderEL.parentElement?.classList.add('is-being-dragged-over');
+        if (yaml.allowDragAndDrop) {
+            fileTitle.draggable = true;
+            fileTitle.addEventListener('dragstart', e => {
+                const dragManager = plugin.app.dragManager;
+                const dragData = dragManager.dragFile(e, child);
+                dragManager.onDragStart(e, dragData);
+                fileTitle.classList.add('is-being-dragged');
+            });
+
+            fileTitle.addEventListener('dragend', () => {
+                fileTitle.classList.remove('is-being-dragged');
+            });
+
+            fileTitle.addEventListener('dragover', e => {
+                e.preventDefault();
+                const { draggable } = plugin.app.dragManager;
+                if (draggable) {
+                    plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.parent?.name || plugin.app.vault.getName() }));
+                    fileElement.parentElement?.parentElement?.classList.add('is-being-dragged-over');
+
                 }
-            }
-        });
+            });
 
-        fileTitle.addEventListener('dragleave', e => {
-            const folderEL = folderOverview.getElFromOverview(child.parent?.path || '')
-            if (folderEL) {
-                folderEL.parentElement?.classList.remove('is-being-dragged-over');
-            }
-        });
+            fileTitle.addEventListener('dragleave', () => {
+                fileElement.parentElement?.parentElement?.classList.remove('is-being-dragged-over');
+            });
 
-        fileTitle.addEventListener('drop', e => {
-            const { draggable } = plugin.app.dragManager;
-            if (draggable && draggable.file instanceof TFolder) {
-                plugin.app.fileManager.renameFile(draggable.file, child.parent?.path + '/' + draggable.file.name);
-            }
-        });
+            fileTitle.addEventListener('drop', e => {
+                e.preventDefault();
+                const { draggable } = plugin.app.dragManager;
+                if (draggable?.file) {
+                    const targetFolder = child.parent?.path || '';
+                    if (targetFolder) {
+                        plugin.app.fileManager.renameFile(draggable.file, `${targetFolder}/${draggable.file.name}`);
+                    }
+                    fileElement.parentElement?.parentElement?.classList.remove('is-being-dragged-over');
+                }
+            });
+        }
 
         fileTitle.onclick = () => {
             plugin.app.workspace.openLinkText(child.path, child.path, true);
-        }
+        };
 
         fileTitle.oncontextmenu = (e) => {
             folderOverview.fileMenu(child, e);
-        }
+        };
 
         fileTitle.createDiv({
             cls: 'tree-item-inner nav-file-title-content',

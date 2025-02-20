@@ -8,6 +8,7 @@ import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
+import { title } from 'process';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
@@ -28,6 +29,8 @@ export type overviewSettings = {
 	showFolderNotes: boolean;
 	disableCollapseIcon: boolean;
 	alwaysCollapse: boolean;
+	autoSync: boolean;
+	allowDragAndDrop: boolean;
 };
 
 export class FolderOverview {
@@ -79,6 +82,8 @@ export class FolderOverview {
 			showFolderNotes: yaml?.showFolderNotes ?? defaultSettings.showFolderNotes,
 			disableCollapseIcon: yaml?.disableCollapseIcon ?? defaultSettings.disableCollapseIcon,
 			alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
+			autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
+			allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop
 		};
 
 
@@ -99,7 +104,9 @@ export class FolderOverview {
 	}
 
 	handleVaultChange(eventType: string) {
-		this.emit('vault-change', eventType);
+		if (this.yaml.autoSync) {
+			this.emit('vault-change', eventType);
+		}
 	}
 
 	disconnectListeners() {
@@ -224,30 +231,12 @@ export class FolderOverview {
 			renderListOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
 		} else if (this.yaml.style === 'explorer') {
 			const fileExplorerOverview = new FileExplorerOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
-			if (this.plugin.app.workspace.layoutReady) {
+			this.plugin.app.workspace.onLayoutReady(async () => {
 				await fileExplorerOverview.renderFileExplorer();
-			} else {
-				this.plugin.app.workspace.onLayoutReady(async () => {
-					await fileExplorerOverview.renderFileExplorer();
-				});
-			}
+			});
 		}
 
-		const overviewListEl = el.childNodes[0].childNodes[1];
-		if (overviewListEl && overviewListEl.childNodes.length === 0) {
-			if (this.yaml.style === 'explorer') {
-				const overview = el.childNodes[0];
-				if (!overview.childNodes[2]) {
-					if (this.plugin.app.workspace.layoutReady) {
-						return this.addEditButton(root);
-					}
-				}
-			} else {
-				if (this.plugin.app.workspace.layoutReady) {
-					return this.addEditButton(root);
-				}
-			}
-		}
+		this.addEditButton(root);
 	}
 
 	addEditButton(root: HTMLElement) {
@@ -294,6 +283,8 @@ export class FolderOverview {
 			yaml.sortByAsc = this.defaultSettings.sortByAsc ?? false;
 		}
 
+		const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
 		files.sort((a, b) => {
 			if (a instanceof TFolder && !(b instanceof TFolder)) {
 				return -1;
@@ -304,8 +295,8 @@ export class FolderOverview {
 
 			if (a instanceof TFolder && b instanceof TFolder) {
 				return yaml.sortByAsc
-					? a.name.localeCompare(b.name)
-					: b.name.localeCompare(a.name);
+					? collator.compare(a.name, b.name)
+					: collator.compare(b.name, a.name);
 			}
 
 			if (a instanceof TFile && b instanceof TFile) {
@@ -315,8 +306,8 @@ export class FolderOverview {
 					return yaml.sortByAsc ? a.stat.mtime - b.stat.mtime : b.stat.mtime - a.stat.mtime;
 				} else if (yaml.sortBy === 'name') {
 					return yaml.sortByAsc
-						? a.basename.localeCompare(b.basename)
-						: b.basename.localeCompare(a.basename);
+						? collator.compare(a.basename, b.basename)
+						: collator.compare(b.basename, a.basename);
 				}
 			}
 
@@ -325,6 +316,7 @@ export class FolderOverview {
 
 		return files;
 	}
+
 
 	getAllFiles(files: TAbstractFile[], sourceFolderPath: string, depth: number) {
 		const allFiles: TAbstractFile[] = [];
@@ -491,28 +483,16 @@ export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesP
 
 export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null) {
 	const sourceFolderPath = overview.folderPath.trim();
-	let sourceFolder: TFolder | undefined | null;
-	let title = overview.title;
-
-	if (sourceFolderPath !== '/') {
-		if (sourceFolderPath === '') {
-			sourceFolder = folder;
-		} else {
-			const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
-			if (newSourceFolder instanceof TFolder) {
-				sourceFolder = newSourceFolder;
-			}
+	const title = overview.title;
+	if (folder?.path === '/' && sourceFolderPath === '' || sourceFolderPath === '/') {
+		return title.replace('{{folderName}}', 'Vault');
+	} else if (folder && sourceFolderPath == '') {
+		return title.replace('{{folderName}}', folder.name);
+	} else if (sourceFolderPath !== '') {
+		const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
+		if (newSourceFolder instanceof TFolder) {
+			return title.replace('{{folderName}}', newSourceFolder.name);
 		}
-	}
-
-	if (!title) { return 'Couldn\'t find title'; }
-
-	if (sourceFolder && sourceFolderPath !== '/') {
-		title = title.replace('{{folderName}}', sourceFolder.name);
-	} else if (sourceFolderPath == '/') {
-		title = title.replace('{{folderName}}', 'Vault');
-	} else {
-		title = title.replace('{{folderName}}', '');
 	}
 
 	return title;

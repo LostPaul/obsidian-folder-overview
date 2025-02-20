@@ -17,17 +17,11 @@ export default class FolderOverviewPlugin extends Plugin {
 		this.settingsTab.display();
 		registerOverviewCommands(this);
 
-		if (this.app.workspace.layoutReady) {
+		this.app.workspace.onLayoutReady(async () => {
 			this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
 				return new FolderOverviewView(leaf, this);
 			});
-		} else {
-			this.app.workspace.onLayoutReady(async () => {
-				this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
-					return new FolderOverviewView(leaf, this);
-				});
-			});
-		}
+		});
 
 		this.registerMarkdownCodeBlockProcessor('folder-overview', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			this.handleOverviewBlock(source, el, ctx);
@@ -54,17 +48,11 @@ export default class FolderOverviewPlugin extends Plugin {
 		});
 
 		try {
-			if (this.app.workspace.layoutReady) {
+			this.app.workspace.onLayoutReady(async () => {
 				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
 				await folderOverview.create(this, parseYaml(source), el, ctx);
 				this.updateOverviewView(this);
-			} else {
-				this.app.workspace.onLayoutReady(async () => {
-					const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
-					await folderOverview.create(this, parseYaml(source), el, ctx);
-					this.updateOverviewView(this);
-				});
-			}
+			});
 		} catch (e) {
 			new Notice('Error creating folder overview (folder notes plugin) - check console for more details');
 			console.error(e);
@@ -110,6 +98,8 @@ export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNo
 	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 	if (!leaf) return;
 	const view = leaf.view as any as FolderOverviewView;
+	if (!view) return;
+	if (!view.yaml) return;
 	const yaml = view.yaml.id === '' ?  view.yaml : newYaml;
 	view.display(view.contentEl, yaml ?? view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'all');
 }

@@ -98,12 +98,19 @@ export class FolderOverviewView extends ItemView {
                 .setClass('fn-select-overview-setting')
                 .addDropdown((cb) => {
                     if (activeFile) {
+                        const titleCounts: Record<string, number> = {};
+
                         const options = overviews.reduce((acc, overview) => {
-                            acc[overview.id] = parseOverviewTitle(
+                            let title = parseOverviewTitle(
                                 overview as any as overviewSettings,
                                 plugin,
                                 activeFile.parent
                             );
+
+                            const count = (titleCounts[title] || 0) + 1;
+                            titleCounts[title] = count;
+
+                            acc[overview.id] = count > 1 ? `${title} (${count})` : title;
                             return acc;
                         }, {} as Record<string, string>);
                         cb.addOptions(options);

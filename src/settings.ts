@@ -27,6 +27,8 @@ export const DEFAULT_SETTINGS: overviewSettings = {
     showFolderNotes: false,
     disableCollapseIcon: true,
     alwaysCollapse: false,
+    autoSync: true,
+    allowDragAndDrop: true,
 }
 
 export class SettingsTab extends PluginSettingTab {
@@ -71,6 +73,36 @@ const createOrReplaceSetting = (
 
 export async function createOverviewSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string | null) {
     changedSection = changedSection ?? null;
+
+    createOrReplaceSetting(contentEl, 'auto-sync', changedSection, (settingEl) => {
+        new Setting(settingEl)
+            .setName('Auto sync')
+            .setDesc('Choose if the overview should automatically update when you delete, create or rename a file/folder')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(yaml.autoSync)
+                    .onChange(async (value) => {
+                        yaml.autoSync = value;
+                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                        refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+                    })
+            );
+    });
+
+    createOrReplaceSetting(contentEl, 'allow-drag-and-drop', changedSection, (settingEl) => {
+        new Setting(settingEl)
+            .setName('Allow drag and drop')
+            .setDesc('Choose if you want to allow drag and drop in the overview')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(yaml.allowDragAndDrop)
+                    .onChange(async (value) => {
+                        yaml.allowDragAndDrop = value;
+                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                        refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+                    })
+            );
+    });
 
     createOrReplaceSetting(contentEl, 'showTitle', changedSection, (settingEl) => {
         new Setting(settingEl)
@@ -135,20 +167,6 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
                         yaml.style = value;
                         updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
                         refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-                    })
-            );
-    });
-
-    createOrReplaceSetting(contentEl, 'store-collapse-condition', changedSection, (settingEl) => {
-        new Setting(settingEl)
-            .setName('Store collapsed condition')
-            .setDesc('Choose if the collapsed condition should be stored until you restart Obsidian')
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(yaml.storeFolderCondition)
-                    .onChange(async (value) => {
-                        yaml.storeFolderCondition = value;
-                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
                     })
             );
     });
@@ -317,6 +335,20 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
             });
     });
 
+    createOrReplaceSetting(contentEl, 'store-collapse-condition', changedSection, (settingEl) => {
+        new Setting(settingEl)
+            .setName('Store collapsed condition')
+            .setDesc('Choose if the collapsed condition should be stored until you restart Obsidian')
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(yaml.storeFolderCondition)
+                    .onChange(async (value) => {
+                        yaml.storeFolderCondition = value;
+                        updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+                    })
+            );
+    });
+
     createOrReplaceSetting(contentEl, 'collapse-all-by-default', changedSection, (settingEl) => {
         new Setting(settingEl)
             .setName('Collapse all in the tree by default')
@@ -335,19 +367,25 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 }
 
 async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
-    let disableFileTag;
+    let showDisableFileTag = false;
     yaml.includeTypes?.forEach((type: string) => {
-        type === 'folder' || type === 'markdown' ? (disableFileTag = true) : null;
+        if (type !== 'markdown' && type !== 'folder') {
+            showDisableFileTag = true;
+        }
     });
-
+    if (yaml.includeTypes.length === 0) {
+        showDisableFileTag = false;
+    }
+    
     toggleSections(contentEl, {
         'setting-title-container-fn': yaml.showTitle,
         'setting-store-collapse-condition': yaml.style === 'explorer',
-        'setting-file-tag': disableFileTag ?? false,
+        'setting-file-tag': showDisableFileTag,
         'setting-show-empty-folders': yaml.style === 'list',
         'setting-show-empty-folders-only-first-level': yaml.showEmptyFolders && yaml.style === 'list',
         'setting-disable-collapse-icon': yaml.style === 'explorer',
         'setting-collapse-all-by-default': yaml.style === 'explorer',
+        'setting-allow-drag-and-drop': yaml.style === 'explorer'
     });
     if (!yaml.id) {
         plugin.saveSettings();

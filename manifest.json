@@ -1,13 +1,12 @@
 {
-    "id": "folder-overview",
-    "name": "Folder overview",
-    "version": "0.1.2",
-    "minAppVersion": "0.15.0",
-    "description": "The plugin provides a dynamic overview of your vault or folders in the format of a code block.",
-    "author": "Lost Paul",
-    "authorUrl": "https://github.com/LostPaul",
-    "fundingUrl": "https://ko-fi.com/paul305844",
-    "helpUrl": "https://lostpaul.github.io/obsidian-folder-notes/Features/Folder%20overview/",
-    "isDesktopOnly": false
-  }
-  
+  "id": "folder-overview",
+  "name": "Folder overview",
+  "version": "0.3.16",
+  "minAppVersion": "0.15.0",
+  "description": "Provides a dynamic overview of your vault or folders in the format of a code block.",
+  "author": "Lost Paul",
+  "authorUrl": "https://github.com/LostPaul",
+  "fundingUrl": "https://ko-fi.com/paul305844",
+  "helpUrl": "https://lostpaul.github.io/obsidian-folder-notes/Features/Folder%20overview/",
+  "isDesktopOnly": false
+}

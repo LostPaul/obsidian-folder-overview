@@ -7,7 +7,7 @@ import FolderNotesPlugin from '../../main';
 
 export function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: overviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
     const overviewList = folderOverview.listEl;
-        overviewList?.empty();
+    overviewList?.empty();
     let tFolder = plugin.app.vault.getAbstractFileByPath(yaml.folderPath);
     if (!tFolder && yaml.folderPath.trim() == '') {
         if (ctx.sourcePath.includes('/')) {
@@ -28,9 +28,13 @@ export function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlu
     files = folderOverview.sortFiles(files.filter(f => f instanceof TFile));
     folders.forEach((file) => {
         if (file instanceof TFolder) {
-            const folderItem = addFolderList(plugin, ul, folderOverview.pathBlacklist, file, folderOverview);
-            if (!folderItem) { return; }
-            goThroughFolders(plugin, folderItem, file, folderOverview.yaml.depth, sourceFolderPath, ctx, folderOverview.yaml, folderOverview.pathBlacklist, folderOverview.yaml.includeTypes, folderOverview.yaml.disableFileTag, folderOverview);
+            if (yaml.includeTypes.includes('folder')) {
+                const folderItem = addFolderList(plugin, ul, folderOverview.pathBlacklist, file, folderOverview);
+                if (!folderItem) { return; }
+                goThroughFolders(plugin, folderItem, file, folderOverview.yaml.depth, sourceFolderPath, ctx, folderOverview.yaml, folderOverview.pathBlacklist, folderOverview.yaml.includeTypes, folderOverview.yaml.disableFileTag, folderOverview);
+            } else {
+                goThroughFolders(plugin, ul, file, folderOverview.yaml.depth, sourceFolderPath, ctx, folderOverview.yaml, folderOverview.pathBlacklist, folderOverview.yaml.includeTypes, folderOverview.yaml.disableFileTag, folderOverview);
+            }
         }
     });
 
@@ -58,6 +62,7 @@ function debounce(func: Function, wait: number) {
 }
 
 export function addFolderList(plugin: FolderOverviewPlugin | FolderNotesPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], folder: TFolder, folderOverview: FolderOverview) {
+    folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
     const isFirstLevelSub = folder.path.split('/').length === folderOverview.yaml.folderPath.split('/').length + 1;
     if (!folderOverview.yaml.showEmptyFolders && folder.children.length === 0 && !folderOverview.yaml.onlyIncludeSubfolders) {
         return;
@@ -110,15 +115,23 @@ async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin
 
     folders.forEach((file) => {
         if (file instanceof TFolder) {
-            const folderItem = addFolderList(plugin, ul, pathBlacklist, file, folderOverview);
-            if (!folderItem) return;
-            goThroughFolders(plugin, folderItem, file, depth, sourceFolderPath, ctx, yaml, pathBlacklist, includeTypes, disableFileTag, folderOverview);
+            if (yaml.includeTypes.includes('folder')) {
+                const folderItem = addFolderList(plugin, ul, pathBlacklist, file, folderOverview);
+                if (!folderItem) { return; }
+                goThroughFolders(plugin, folderItem, file, depth, sourceFolderPath, ctx, yaml, pathBlacklist, includeTypes, disableFileTag, folderOverview);
+            } else {
+                goThroughFolders(plugin, list, file, depth, sourceFolderPath, ctx, yaml, pathBlacklist, includeTypes, disableFileTag, folderOverview);
+            }
         }
     });
 
     files.forEach((file) => {
         if (file instanceof TFile) {
-            addFileList(plugin, ul, pathBlacklist, file, includeTypes, disableFileTag, folderOverview);
+            if (yaml.includeTypes.includes('folder')) {
+                addFileList(plugin, ul, pathBlacklist, file, includeTypes, disableFileTag, folderOverview);
+            } else {
+                addFileList(plugin, list, pathBlacklist, file, includeTypes, disableFileTag, folderOverview);
+            }
         }
     });
 }
@@ -145,6 +158,7 @@ function addFileList(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTM
         }
     }
 
+    folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
     const listItem = list.createEl('li', { cls: 'folder-overview-list file-link' });
     listItem.oncontextmenu = (e) => {
         e.stopImmediatePropagation();
