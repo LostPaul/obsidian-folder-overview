@@ -1,4 +1,4 @@
-name: Trigger Build in Folder Notes
+name: Trigger Folder Notes Build
 
 on:
   push:
@@ -6,12 +6,12 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  trigger:
+  trigger-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger build in folder-notes
+      - name: Trigger build on folder-notes
         run: |
           curl -X POST -H "Authorization: token ${{ secrets.PAT }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/LostPaul/obsidian-folder-notes/actions/workflows/create-release-for-fv.yaml/dispatches \
+          https://api.github.com/repos/LostPaul/obsidian-folder-notes/actions/workflows/build-and-push.yml/dispatches \
           -d '{"ref": "main", "inputs": {"tag": "${{ github.ref_name }}"}}'
