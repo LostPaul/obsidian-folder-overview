@@ -1,20 +1,14 @@
-name: Plugin Release
+name: Create Plugin Release
 
 on:
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
     inputs:
       tag:
         description: "Tag to build"
         required: true
 
-permissions:
-  contents: write  # Allow write access to repository contents
-
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,29 +16,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure latest code is pulled
-        run: git pull origin main
-
-      - name: Debug file existence before copying
-        run: ls -la src/
-
       - name: Prepare files for release
         run: |
           mkdir -p release
-          cp main.js \
-             styles.css \
-             manifest.json release/
+          cp main.js styles.css manifest.json release/
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1.12.0
         with:
           artifacts: "release/main.js,release/styles.css,release/manifest.json"
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
-
-      - name: Clean up built files after release
-        run: |
-          git checkout main
-          git rm -f main.js styles.css
-          git commit -m "Remove built files after release" || echo "No changes to commit"
-          git push origin main || echo "No changes to push"
+          tag: ${{ github.event.inputs.tag }}
