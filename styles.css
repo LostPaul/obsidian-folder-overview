@@ -2,6 +2,10 @@
     display: none;
 }
 
+.folder-overview-container.fv-remove-edit-button .folder-overview-edit-button {
+    display: none;
+}
+
 .fn-folder-overview-collapse-icon {
     display: block !important;
 }
