@@ -25,5 +25,5 @@ jobs:
         uses: ncipollo/release-action@v1.12.0
         with:
           artifacts: "release/main.js,release/styles.css,release/manifest.json"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT }}
           tag: ${{ github.event.inputs.tag }}
