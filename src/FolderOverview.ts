@@ -8,7 +8,6 @@ import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
-import { title } from 'process';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
@@ -83,7 +82,7 @@ export class FolderOverview {
 			disableCollapseIcon: yaml?.disableCollapseIcon ?? defaultSettings.disableCollapseIcon,
 			alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
 			autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
-			allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop
+			allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop,
 		};
 
 
@@ -167,7 +166,7 @@ export class FolderOverview {
 		if (this.yaml.showTitle) {
 			if (sourceFolder && sourceFolderPath !== '/') {
 				titleEl.innerText = this.yaml.title.replace('{{folderName}}', sourceFolder.name);
-			} else if (sourceFolderPath == '/') {
+			} else if (sourceFolderPath === '/') {
 				titleEl.innerText = this.yaml.title.replace('{{folderName}}', 'Vault');
 			} else {
 				titleEl.innerText = this.yaml.title.replace('{{folderName}}', '');
@@ -175,7 +174,7 @@ export class FolderOverview {
 		}
 
 		if (!sourceFolder && (sourceFolderPath !== '/' && sourceFolderPath !== '')) { return new Notice('Folder overview: Couldn\'t find the folder'); }
-		if (!sourceFolder && sourceFolderPath == '') {
+		if (!sourceFolder && sourceFolderPath === '') {
 			sourceFolderPath = '/';
 		}
 		if (!(sourceFolder instanceof TFolder) && sourceFolderPath !== '/') { return; }
@@ -486,7 +485,7 @@ export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOve
 	const title = overview.title;
 	if (folder?.path === '/' && sourceFolderPath === '' || sourceFolderPath === '/') {
 		return title.replace('{{folderName}}', 'Vault');
-	} else if (folder && sourceFolderPath == '') {
+	} else if (folder && sourceFolderPath === '') {
 		return title.replace('{{folderName}}', folder.name);
 	} else if (sourceFolderPath !== '') {
 		const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);

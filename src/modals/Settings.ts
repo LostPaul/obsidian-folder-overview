@@ -1,8 +1,5 @@
-import { App, Modal, Setting, MarkdownPostProcessorContext, stringifyYaml, TFile, TFolder, SettingTab, Plugin } from 'obsidian';
-import { overviewSettings, includeTypes, FolderOverview } from '../FolderOverview';
-import { ListComponent } from '../utils/ListComponent';
-import { updateYaml } from '../FolderOverview';
-import { FolderSuggest } from '../suggesters/FolderSuggester';
+import { App, Modal, MarkdownPostProcessorContext, TFile, SettingTab } from 'obsidian';
+import { overviewSettings, includeTypes, updateYaml } from '../FolderOverview';
 import { getFolderPathFromString } from '../utils/functions';
 import { createOverviewSettings } from '../settings';
 import FolderOverviewPlugin from '../main';
@@ -41,7 +38,7 @@ export class FolderOverviewSettings extends Modal {
 				alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
 				autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
 				allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop,
-			}
+			};
 		}
 		if (ctx) {
 			this.ctx = ctx;
@@ -58,16 +55,16 @@ export class FolderOverviewSettings extends Modal {
 		this.display(contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, this.el, this.ctx);
 	}
 
-	display(contentEl: HTMLElement, 
-		yaml: overviewSettings, 
+	display(contentEl: HTMLElement,
+		yaml: overviewSettings,
 		plugin: FolderOverviewPlugin | FolderNotesPlugin,
-		defaultSettings: overviewSettings, 
-		display: CallableFunction, 
-		el?: HTMLElement, 
-		ctx?: MarkdownPostProcessorContext, 
-		file?: TFile | null, 
-		settingsTab?: SettingTab, 
-		modal?: FolderOverviewSettings, 
+		defaultSettings: overviewSettings,
+		display: CallableFunction,
+		el?: HTMLElement,
+		ctx?: MarkdownPostProcessorContext,
+		file?: TFile | null,
+		settingsTab?: SettingTab,
+		modal?: FolderOverviewSettings,
 		changedSection?: string) {
 		modal = this ?? modal;
 		contentEl.empty();

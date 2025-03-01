@@ -5,7 +5,6 @@ import { DEFAULT_SETTINGS, SettingsTab } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
 import FolderNotesPlugin from '../../main';
-import { FolderNotesSettings } from '../../settings/SettingsTab';
 
 export default class FolderOverviewPlugin extends Plugin {
 	settings: overviewSettings;
@@ -100,7 +99,7 @@ export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNo
 	const view = leaf.view as any as FolderOverviewView;
 	if (!view) return;
 	if (!view.yaml) return;
-	const yaml = view.yaml.id === '' ?  view.yaml : newYaml;
+	const yaml = view.yaml.id === '' ? view.yaml : newYaml;
 	view.display(view.contentEl, yaml ?? view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'all');
 }
 
