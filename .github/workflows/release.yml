@@ -27,3 +27,8 @@ jobs:
           artifacts: "release/main.js,release/styles.css,release/manifest.json"
           token: ${{ secrets.PAT }}
           tag: ${{ github.event.inputs.tag }}
+
+      - name: Cleanup main.js
+        run: |
+          rm -f main.js
+          echo "main.js has been deleted after release."
