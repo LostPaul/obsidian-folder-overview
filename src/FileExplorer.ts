@@ -190,7 +190,7 @@ export class FileExplorerOverview {
 		if (folderNote) { pathBlacklist.push(folderNote.path); }
 		let excludedFolder = undefined;
 		if (plugin instanceof FolderNotesPlugin) {
-			excludedFolder = await getExcludedFolder(plugin, child.path, true);
+			excludedFolder = getExcludedFolder(plugin, child.path, true);
 		}
 		if (excludedFolder?.excludeFromFolderOverview) { return; }
 

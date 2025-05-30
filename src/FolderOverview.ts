@@ -258,7 +258,7 @@ export class FolderOverview {
 			let isExcludedFromOverview = false;
 
 			if (plugin instanceof FolderNotesPlugin) {
-				isExcludedFromOverview = (await getExcludedFolder(plugin, file.path, true))?.excludeFromFolderOverview ?? false;
+				isExcludedFromOverview = (getExcludedFolder(plugin, file.path, true))?.excludeFromFolderOverview ?? false;
 			}
 
 			if ((isBlacklisted && !this.yaml.showFolderNotes) || !isSubfolder || isSourceFile || isExcludedFromOverview) {
