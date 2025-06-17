@@ -2,7 +2,7 @@ import { MarkdownPostProcessorContext, TAbstractFile, TFolder, TFile, setIcon } 
 import { getFolderNote } from '../../functions/folderNoteFunctions';
 import { getExcludedFolder } from '../../ExcludeFolders/functions/folderFunctions';
 import { getFolderPathFromString } from '../../functions/utils';
-import { getEl } from '../../functions/styleFunctions';
+import { getFileExplorerElement } from '../../functions/styleFunctions';
 import { FolderOverview, overviewSettings } from './FolderOverview';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
@@ -41,7 +41,7 @@ export class FileExplorerOverview {
 		const folderOverview = this.folderOverview;
 		let folder: HTMLElement | null = null;
 		if (plugin instanceof FolderNotesPlugin) {
-			folder = getEl(yaml.folderPath, plugin);
+			folder = getFileExplorerElement(yaml.folderPath, plugin);
 		}
 		let folderElement = folder?.parentElement;
 		const overviewList = folderOverview.listEl;
