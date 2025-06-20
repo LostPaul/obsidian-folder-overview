@@ -8,6 +8,7 @@ import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
+import { getFolder } from '../../functions/folderNoteFunctions';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
@@ -59,10 +60,34 @@ export class FolderOverview {
 		this.source = source;
 		this.el = el;
 		this.sourceFilePath = this.ctx.sourcePath;
-		const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
-		if (sourceFolder instanceof TFolder) {
-			this.sourceFolder = sourceFolder;
+
+		switch (yaml?.folderPath.trim()) {
+			case 'File’s parent folder path':
+				yaml.folderPath = getFolderPathFromString(ctx.sourcePath);
+				break;
+			case 'Path of folder linked to the file': {
+				const sourceFile = this.plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
+				if (plugin instanceof FolderNotesPlugin && sourceFile instanceof TFile) {
+					const folderNoteFolder = getFolder(plugin, sourceFile);
+					if (folderNoteFolder instanceof TFolder) {
+						this.sourceFolder = folderNoteFolder;
+						yaml.folderPath = folderNoteFolder.path;
+					} else {
+						yaml.folderPath = '';
+					}
+				}
+				break;
+			}
+			default: {
+				const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
+				if (sourceFolder instanceof TFolder) {
+					yaml.folderPath = sourceFolder.path;
+					this.sourceFolder = sourceFolder;
+				}
+				break;
+			}
 		}
+
 		this.defaultSettings = defaultSettings;
 		this.yaml = {
 			id: yaml?.id ?? crypto.randomUUID(),
@@ -84,7 +109,6 @@ export class FolderOverview {
 			autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
 			allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop,
 		};
-
 
 		const customChild = new CustomMarkdownRenderChild(el, this);
 		ctx.addChild(customChild);

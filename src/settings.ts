@@ -142,10 +142,13 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setPlaceholder('Folder path')
 					.setValue(yaml?.folderPath || '')
 					.onChange(async (value) => {
-						if (value.trim() !== '') {
+						const whiteList = ['File’s parent folder path', 'Path of folder linked to the file'];
+						if (value.trim() !== '' && !whiteList.includes(value.trim())) {
 							value = normalizePath(value);
 						}
-						if (!(plugin.app.vault.getAbstractFileByPath(value) instanceof TFolder) && value !== '') return;
+						if (!whiteList.includes(value.trim())) {
+							if (!(plugin.app.vault.getAbstractFileByPath(value) instanceof TFolder) && value !== '') return;
+						}
 						yaml.folderPath = value;
 						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
 					});
