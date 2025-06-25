@@ -22,15 +22,20 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 					const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
 					json.id = crypto.randomUUID();
 					const yaml = stringifyYaml(json);
+					const overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
+					// overviewBlock = `${overviewBlock}%% folder overview links start %%\n%% folder overview links end %%\n`;
+
 					if (lineText.trim() === '') {
-						editor.replaceSelection(`\`\`\`folder-overview\n${yaml}\`\`\`\n`);
+						editor.replaceSelection(overviewBlock);
 					} else if (lineText.trim() === '>') {
 						// add > to the beginning of each line
 						const lines = yaml.split('\n');
 						const newLines = lines.map((line) => {
 							return `> ${line}`;
 						});
-						editor.replaceSelection(`\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`);
+						const quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
+						// quotedBlock = `${quotedBlock}%% folder overview links start %%\n %% folder overview links end %%\n`;
+						editor.replaceSelection(quotedBlock);
 					}
 				}
 				return true;
@@ -44,21 +49,26 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 		const lineText = editor.getLine(line);
 		if (lineText.trim() === '' || lineText.trim() === '>') {
 			menu.addItem((item) => {
-				item.setTitle('Create folder overview')
+				item.setTitle('Insert folder overview')
 					.setIcon('edit')
 					.onClick(() => {
 						const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
 						json.id = crypto.randomUUID();
 						const yaml = stringifyYaml(json);
+						const overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
+						// overviewBlock = `${overviewBlock}%% folder overview links start %%\n%% folder overview links end %%\n`;
+
 						if (lineText.trim() === '') {
-							editor.replaceSelection(`\`\`\`folder-overview\n${yaml}\`\`\`\n`);
+							editor.replaceSelection(overviewBlock);
 						} else if (lineText.trim() === '>') {
 							// add > to the beginning of each line
 							const lines = yaml.split('\n');
 							const newLines = lines.map((line) => {
 								return `> ${line}`;
 							});
-							editor.replaceSelection(`\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`);
+							const quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
+							// quotedBlock = `${quotedBlock}%% folder overview links start %%\n %% folder overview links end %%\n`;
+							editor.replaceSelection(quotedBlock);
 						}
 					});
 			});

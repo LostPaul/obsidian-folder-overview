@@ -8,7 +8,7 @@ import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
-import { getFolder } from '../../functions/folderNoteFunctions';
+import { getFolder, getFolderNote } from '../../functions/folderNoteFunctions';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
@@ -48,6 +48,7 @@ export class FolderOverview {
 	root: HTMLElement;
 	listEl: HTMLUListElement;
 	defaultSettings: overviewSettings;
+	sourceFile: TFile;
 
 	eventListeners: (() => void)[] = [];
 	constructor(plugin: FolderNotesPlugin | FolderOverviewPlugin, ctx: MarkdownPostProcessorContext, source: string, el: HTMLElement, defaultSettings: overviewSettings) {
@@ -60,15 +61,23 @@ export class FolderOverview {
 		this.source = source;
 		this.el = el;
 		this.sourceFilePath = this.ctx.sourcePath;
+		const sourceFile = this.plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
+		if (sourceFile instanceof TFile) {
+			this.sourceFile = sourceFile;
+		}
 
 		switch (yaml?.folderPath.trim()) {
-			case 'File’s parent folder path':
-				yaml.folderPath = getFolderPathFromString(ctx.sourcePath);
+			case 'File’s parent folder path': {
+				const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
+				if (sourceFolder instanceof TFolder) {
+					yaml.folderPath = sourceFolder.path;
+					this.sourceFolder = sourceFolder;
+				}
 				break;
+			}
 			case 'Path of folder linked to the file': {
-				const sourceFile = this.plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
-				if (plugin instanceof FolderNotesPlugin && sourceFile instanceof TFile) {
-					const folderNoteFolder = getFolder(plugin, sourceFile);
+				if (plugin instanceof FolderNotesPlugin && this.sourceFile instanceof TFile) {
+					const folderNoteFolder = getFolder(plugin, this.sourceFile);
 					if (folderNoteFolder instanceof TFolder) {
 						this.sourceFolder = folderNoteFolder;
 						yaml.folderPath = folderNoteFolder.path;
@@ -78,8 +87,16 @@ export class FolderOverview {
 				}
 				break;
 			}
-			default: {
+			case '': {
 				const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
+				if (sourceFolder instanceof TFolder) {
+					yaml.folderPath = sourceFolder.path;
+					this.sourceFolder = sourceFolder;
+				}
+				break;
+			}
+			default: {
+				const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(yaml.folderPath.trim());
 				if (sourceFolder instanceof TFolder) {
 					yaml.folderPath = sourceFolder.path;
 					this.sourceFolder = sourceFolder;
@@ -177,15 +194,7 @@ export class FolderOverview {
 
 		this.registerListeners();
 
-		let sourceFolder;
-
-		if (sourceFolderPath !== '/') {
-			if (this.yaml.folderPath.trim() === '') {
-				sourceFolder = plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
-			} else {
-				sourceFolder = plugin.app.vault.getAbstractFileByPath(this.yaml.folderPath.trim());
-			}
-		}
+		const sourceFolder = this.sourceFolder;
 
 		if (this.yaml.showTitle) {
 			if (sourceFolder && sourceFolderPath !== '/') {
@@ -259,7 +268,75 @@ export class FolderOverview {
 			});
 		}
 
+		this.updateLinkList(files);
 		this.addEditButton(root);
+	}
+
+	updateLinkList(files: TAbstractFile[] = []) {
+		// this.plugin.app.vault.process(this.sourceFile, (text) => {
+		// 	const info = this.ctx.getSectionInfo(this.el);
+		// 	if (!info) return text;
+
+		// 	const { lineStart } = info;
+		// 	const lineEnd = getCodeBlockEndLine(text, lineStart);
+		// 	if (lineEnd === -1 || !lineEnd) return text;
+
+		// 	const lines = text.split('\n');
+		// 	const linkListStart = '%% folder overview links start %%';
+		// 	const linkListEnd = '%% folder overview links end %%';
+
+		// 	// Only remove the link list section between the start and end comments, not the code block itself.
+		// 	const startIdx = lines.findIndex((l, idx) => idx > lineEnd && l.trim() === linkListStart);
+		// 	const endIdx = lines.findIndex((l, idx) => idx > lineEnd && l.trim() === linkListEnd);
+
+		// 	if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+		// 		lines.splice(startIdx, endIdx - startIdx + 1);
+		// 	}
+
+		// 	const fileLinks: string[] = this.buildLinkList(files);
+
+		// 	// Insert after the code block, or after the removed link list if it existed
+		// 	let insertAt = lineEnd + 1;
+		// 	if (startIdx !== -1) {
+		// 		insertAt = startIdx;
+		// 	}
+
+		// 	const newBlock = [
+		// 		linkListStart,
+		// 		...fileLinks,
+		// 		linkListEnd,
+		// 	];
+		// 	lines.splice(insertAt, 0, ...newBlock);
+
+		// 	return lines.join('\n');
+		// });
+	}
+
+	private buildLinkList(items: TAbstractFile[], indent = 0): string[] {
+		const result: string[] = [];
+		for (const item of items) {
+			const indentStr = '\t'.repeat(indent);
+			if (item instanceof TFile) {
+				result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
+			} else if (item instanceof TFolder) {
+				let line = `${indentStr}- **${item.name}**`;
+				let folderNote: TFile | null | undefined = null;
+				if (this.plugin instanceof FolderNotesPlugin) {
+					folderNote = getFolderNote(this.plugin, item.path);
+				}
+				if (folderNote) {
+					line = `${indentStr}- **[[${folderNote.path}|${item.name}]]**`;
+				}
+				result.push(line);
+				const children = item.children.filter(
+					(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
+				);
+				if (children.length > 0) {
+					result.push(...this.buildLinkList(children, indent + 1));
+				}
+			}
+		}
+		return result;
 	}
 
 	addEditButton(root: HTMLElement) {
