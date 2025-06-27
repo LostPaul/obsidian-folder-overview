@@ -64,6 +64,9 @@ export default class FolderOverviewPlugin extends Plugin {
 
 	async loadSettings() {
 		const data = await this.loadData();
+		if(data.firstTimeInsertOverview === undefined) {
+			data.firstTimeInsertOverview = false;
+		}
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 	}
 

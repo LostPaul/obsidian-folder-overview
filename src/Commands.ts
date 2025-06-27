@@ -22,8 +22,10 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 					const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
 					json.id = crypto.randomUUID();
 					const yaml = stringifyYaml(json);
-					const overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
-					// overviewBlock = `${overviewBlock}%% folder overview links start %%\n%% folder overview links end %%\n`;
+					let overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
+					if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
+						overviewBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+					}
 
 					if (lineText.trim() === '') {
 						editor.replaceSelection(overviewBlock);
@@ -33,8 +35,10 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 						const newLines = lines.map((line) => {
 							return `> ${line}`;
 						});
-						const quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
-						// quotedBlock = `${quotedBlock}%% folder overview links start %%\n %% folder overview links end %%\n`;
+						let quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
+						if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
+							quotedBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+						}
 						editor.replaceSelection(quotedBlock);
 					}
 				}
@@ -55,8 +59,10 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 						const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
 						json.id = crypto.randomUUID();
 						const yaml = stringifyYaml(json);
-						const overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
-						// overviewBlock = `${overviewBlock}%% folder overview links start %%\n%% folder overview links end %%\n`;
+						let overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
+						if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
+							overviewBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+						}
 
 						if (lineText.trim() === '') {
 							editor.replaceSelection(overviewBlock);
@@ -66,8 +72,10 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 							const newLines = lines.map((line) => {
 								return `> ${line}`;
 							});
-							const quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
-							// quotedBlock = `${quotedBlock}%% folder overview links start %%\n %% folder overview links end %%\n`;
+							let quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
+							if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
+								quotedBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+							}
 							editor.replaceSelection(quotedBlock);
 						}
 					});

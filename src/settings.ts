@@ -28,6 +28,9 @@ export const DEFAULT_SETTINGS: overviewSettings = {
 	alwaysCollapse: false,
 	autoSync: true,
 	allowDragAndDrop: true,
+	hideLinkList: true,
+	hideFolderOverview: false,
+	useActualLinks: false,
 };
 
 export class SettingsTab extends PluginSettingTab {
@@ -82,7 +85,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.autoSync)
 					.onChange(async (value) => {
 						yaml.autoSync = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
 					})
 			);
@@ -97,7 +100,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.allowDragAndDrop)
 					.onChange(async (value) => {
 						yaml.allowDragAndDrop = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
 					})
 			);
@@ -106,13 +109,13 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 	createOrReplaceSetting(contentEl, 'showTitle', changedSection, (settingEl) => {
 		new Setting(settingEl)
 			.setName('Show the title')
-			.setDesc('Choose if the title should be shown')
+			.setDesc('Choose if the title above the folder overview should be shown')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(yaml.showTitle)
 					.onChange(async (value) => {
 						yaml.showTitle = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
 					})
 			);
@@ -127,7 +130,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml?.title || '{{folderName}} overview')
 					.onChange(async (value) => {
 						yaml.title = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					})
 			);
 	});
@@ -150,10 +153,57 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 							if (!(plugin.app.vault.getAbstractFileByPath(value) instanceof TFolder) && value !== '') return;
 						}
 						yaml.folderPath = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					});
 			});
 		folderPathSetting.settingEl.classList.add('fn-overview-folder-path');
+	});
+
+	createOrReplaceSetting(contentEl, 'use-actual-links', changedSection, (settingEl) => {
+		new Setting(settingEl)
+			.setName('Use actual links')
+			.setDesc('Choose if the links in the overview should be showed in the graph view. This requires a second list under the actual overview and which is hidden by default.')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(yaml.useActualLinks)
+					.onChange(async (value) => {
+						yaml.useActualLinks = value;
+						updateSettings(contentEl, yaml, plugin, yaml.useActualLinks, defaultSettings, el, ctx, file);
+						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+					})
+			);
+	});
+
+	createOrReplaceSetting(contentEl, 'hide-folder-overview', changedSection, (settingEl) => {
+		const hideOverviewSeting = new Setting(settingEl)
+			.setName('Hide folder overview')
+			.setDesc('Choose if the folder overview should be hidden and instead only the link list should be shown')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(yaml.hideFolderOverview)
+					.onChange(async (value) => {
+						yaml.hideFolderOverview = value;
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
+						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+					})
+			);
+		hideOverviewSeting.settingEl.classList.add('fn-hide-overview-setting');
+	});
+
+	createOrReplaceSetting(contentEl, 'hide-link-list', changedSection, (settingEl) => {
+		const hideLinkListSetting = new Setting(settingEl)
+			.setName('Hide link list')
+			.setDesc('Choose if only link list under the folder overview should be shown')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(yaml.hideLinkList)
+					.onChange(async (value) => {
+						yaml.hideLinkList = value;
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
+						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
+					})
+			);
+		hideLinkListSetting.settingEl.classList.add('fn-hide-link-list-setting');
 	});
 
 	createOrReplaceSetting(contentEl, 'overview-style', changedSection, (settingEl) => {
@@ -167,7 +217,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml?.style || 'list')
 					.onChange(async (value: 'list') => {
 						yaml.style = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
 					})
 			);
@@ -179,7 +229,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 		const list = new ListComponent(setting.settingEl, yaml.includeTypes || [], ['markdown', 'folder']);
 		list.on('update', (values) => {
 			yaml.includeTypes = values;
-			updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+			updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 			refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal, 'include-types');
 		});
 
@@ -212,7 +262,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 						list.setValues(yaml.includeTypes);
 					}
 					await list.addValue(value.toLowerCase());
-					updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+					updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal, 'include-types');
 				});
 			});
@@ -228,7 +278,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.disableFileTag)
 					.onChange(async (value) => {
 						yaml.disableFileTag = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					});
 			});
 	});
@@ -242,7 +292,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.showFolderNotes)
 					.onChange(async (value) => {
 						yaml.showFolderNotes = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					})
 			);
 	});
@@ -258,7 +308,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setDynamicTooltip()
 					.onChange(async (value) => {
 						yaml.depth = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					})
 			);
 	});
@@ -275,7 +325,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml?.sortBy || 'name')
 					.onChange(async (value: 'name' | 'created' | 'modified') => {
 						yaml.sortBy = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					})
 			)
 			.addDropdown((dropdown) => {
@@ -289,7 +339,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 				}
 				dropdown.onChange(async (value) => {
 					yaml.sortByAsc = value === 'asc';
-					updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+					updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 				});
 			});
 	});
@@ -304,7 +354,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.onChange(async (value) => {
 						yaml.showEmptyFolders = value;
 						yaml.onlyIncludeSubfolders = false;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
 					});
 			});
@@ -318,7 +368,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.onlyIncludeSubfolders)
 					.onChange(async (value) => {
 						yaml.onlyIncludeSubfolders = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					});
 			});
 	});
@@ -332,7 +382,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.disableCollapseIcon)
 					.onChange(async (value) => {
 						yaml.disableCollapseIcon = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					});
 			});
 	});
@@ -346,7 +396,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.storeFolderCondition)
 					.onChange(async (value) => {
 						yaml.storeFolderCondition = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					})
 			);
 	});
@@ -360,15 +410,15 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 					.setValue(yaml.alwaysCollapse)
 					.onChange(async (value) => {
 						yaml.alwaysCollapse = value;
-						updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 					});
 			});
 	});
 
-	updateSettings(contentEl, yaml, plugin, defaultSettings, el, ctx, file);
+	updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 }
 
-async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
+async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, addLinkList: boolean, defaultSettings: overviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
 	let showDisableFileTag = false;
 	yaml.includeTypes?.forEach((type: string) => {
 		if (type !== 'markdown' && type !== 'folder') {
@@ -388,6 +438,8 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
 		'setting-disable-collapse-icon': yaml.style === 'explorer',
 		'setting-collapse-all-by-default': yaml.style === 'explorer',
 		'setting-allow-drag-and-drop': yaml.style === 'explorer',
+		'setting-hide-folder-overview': !yaml.hideLinkList && yaml.useActualLinks,
+		'setting-hide-link-list': !yaml.hideFolderOverview && yaml.useActualLinks,
 	});
 	if (!yaml.id) {
 		plugin.saveSettings();
@@ -398,11 +450,11 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
 	}
 
 	if (el && ctx) {
-		await updateYaml(plugin, ctx, el, yaml);
+		await updateYaml(plugin, ctx, el, yaml, addLinkList);
 	}
 
 	if (file) {
-		await updateYamlById(plugin, yaml.id, file, yaml);
+		await updateYamlById(plugin, yaml.id, file, yaml, addLinkList);
 	}
 }
 

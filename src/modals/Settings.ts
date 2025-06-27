@@ -38,6 +38,9 @@ export class FolderOverviewSettings extends Modal {
 				alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
 				autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
 				allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop,
+				hideLinkList: yaml?.hideLinkList ?? defaultSettings.hideLinkList,
+				hideFolderOverview: yaml?.hideFolderOverview ?? defaultSettings.hideFolderOverview,
+				useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
 			};
 		}
 		if (ctx) {
@@ -47,7 +50,7 @@ export class FolderOverviewSettings extends Modal {
 			this.el = el;
 		}
 
-		updateYaml(this.plugin, this.ctx, this.el, this.yaml);
+		updateYaml(this.plugin, this.ctx, this.el, this.yaml, false);
 	}
 
 	onOpen() {

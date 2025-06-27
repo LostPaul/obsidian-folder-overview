@@ -26,7 +26,6 @@
     display: flex;
 }
 
-
 .folder-overview-list::marker {
     color: var(--text-faint);
 }
@@ -72,4 +71,14 @@
 
 .overview-setting-item-fv .setting-item {
     padding: 0;
+}
+
+.cm-line:has(.fv-link-list-item),
+.el-ul:has(.fv-link-list-item),
+.cm-line:has(.fv-link-list-start),
+.el-p:has(.fv-link-list-start),
+.cm-line:has(.fv-link-list-end),
+.el-p:has(.fv-link-list-end),
+.fv-hide-overview {
+    display: none !important;
 }

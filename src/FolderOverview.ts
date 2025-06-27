@@ -31,6 +31,9 @@ export type overviewSettings = {
 	alwaysCollapse: boolean;
 	autoSync: boolean;
 	allowDragAndDrop: boolean;
+	hideLinkList: boolean;
+	hideFolderOverview: boolean;
+	useActualLinks: boolean;
 };
 
 export class FolderOverview {
@@ -125,6 +128,9 @@ export class FolderOverview {
 			alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
 			autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
 			allowDragAndDrop: yaml?.allowDragAndDrop ?? defaultSettings.allowDragAndDrop,
+			hideLinkList: yaml?.hideLinkList ?? defaultSettings.hideLinkList,
+			hideFolderOverview: yaml?.hideFolderOverview ?? defaultSettings.hideFolderOverview,
+			useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
 		};
 
 		const customChild = new CustomMarkdownRenderChild(el, this);
@@ -172,6 +178,13 @@ export class FolderOverview {
 	async create(plugin: FolderOverviewPlugin | FolderNotesPlugin, source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
 		el.empty();
 		el.parentElement?.classList.add('folder-overview-container');
+		if (this.yaml.hideFolderOverview) {
+			el.parentElement?.classList.add('fv-hide-overview');
+		}
+
+		el.parentElement?.addEventListener('contextmenu', (e) => {
+			this.editOverviewContextMenu(e);
+		}, { capture: true });
 
 		const root = el.createEl('div', { cls: 'folder-overview' });
 		this.root = root;
@@ -212,7 +225,7 @@ export class FolderOverview {
 		}
 		if (!(sourceFolder instanceof TFolder) && sourceFolderPath !== '/') { return; }
 
-		if (sourceFolderPath === '/') {
+		if (sourceFolder?.path === '/') {
 			const rootFiles: TAbstractFile[] = [];
 			plugin.app.vault.getAllLoadedFiles().filter((f) => f.parent?.path === '/').forEach((file) => {
 				if (!file.path.includes('/')) {
@@ -268,71 +281,121 @@ export class FolderOverview {
 			});
 		}
 
-		this.updateLinkList(files);
+		if (this.yaml.useActualLinks) {
+			setTimeout(() => {
+				this.updateLinkList(files);
+			}, 1000);
+		} else {
+			this.removeLinkList();
+		}
 		this.addEditButton(root);
 	}
 
 	updateLinkList(files: TAbstractFile[] = []) {
-		// this.plugin.app.vault.process(this.sourceFile, (text) => {
-		// 	const info = this.ctx.getSectionInfo(this.el);
-		// 	if (!info) return text;
+		this.buildLinkList(files).then((fileLinks: string[]) => {
+			this.plugin.app.vault.process(this.sourceFile, (text) => {
+				const lines = text.split('\n');
+				const linkListStart = `<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
+				const linkListEnd = `<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
 
-		// 	const { lineStart } = info;
-		// 	const lineEnd = getCodeBlockEndLine(text, lineStart);
-		// 	if (lineEnd === -1 || !lineEnd) return text;
+				const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
+				const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
 
-		// 	const lines = text.split('\n');
-		// 	const linkListStart = '%% folder overview links start %%';
-		// 	const linkListEnd = '%% folder overview links end %%';
+				const linkListExists = startIdx !== -1 && endIdx !== -1;
+				const isInvalidLinkList = endIdx < startIdx;
+				if (!linkListExists || isInvalidLinkList) {
+					return text;
+				}
 
-		// 	// Only remove the link list section between the start and end comments, not the code block itself.
-		// 	const startIdx = lines.findIndex((l, idx) => idx > lineEnd && l.trim() === linkListStart);
-		// 	const endIdx = lines.findIndex((l, idx) => idx > lineEnd && l.trim() === linkListEnd);
+				lines.splice(startIdx, endIdx - startIdx + 1);
 
-		// 	if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-		// 		lines.splice(startIdx, endIdx - startIdx + 1);
-		// 	}
+				// Add the file/folder links into the text
+				const newBlock = [
+					linkListStart,
+					...fileLinks,
+					linkListEnd,
+				];
+				lines.splice(startIdx, 0, ...newBlock);
 
-		// 	const fileLinks: string[] = this.buildLinkList(files);
-
-		// 	// Insert after the code block, or after the removed link list if it existed
-		// 	let insertAt = lineEnd + 1;
-		// 	if (startIdx !== -1) {
-		// 		insertAt = startIdx;
-		// 	}
-
-		// 	const newBlock = [
-		// 		linkListStart,
-		// 		...fileLinks,
-		// 		linkListEnd,
-		// 	];
-		// 	lines.splice(insertAt, 0, ...newBlock);
-
-		// 	return lines.join('\n');
-		// });
+				return lines.join('\n');
+			});
+		});
 	}
 
-	private buildLinkList(items: TAbstractFile[], indent = 0): string[] {
+	removeLinkList() {
+		this.plugin.app.vault.process(this.sourceFile, (text) => {
+			const lines = text.split('\n');
+			const linkListStart = `<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
+			const linkListEnd = `<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
+
+			const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
+			const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
+
+			const linkListExists = startIdx !== -1 && endIdx !== -1;
+			const isInvalidLinkList = endIdx < startIdx;
+
+			if (!linkListExists || isInvalidLinkList) {
+				return text;
+			}
+
+			lines.splice(startIdx, endIdx - startIdx + 1);
+			return lines.join('\n');
+		});
+	}
+
+	private async buildLinkList(items: TAbstractFile[], indent = 0): Promise<string[]> {
 		const result: string[] = [];
-		for (const item of items) {
+		// Filter and sort items before building the link list
+		const filtered = (await this.filterFiles(
+			items,
+			this.plugin,
+			this.yaml.folderPath,
+			this.yaml.depth,
+			this.pathBlacklist
+		)).filter((file): file is TAbstractFile => file !== null);
+
+		const sorted = this.sortFiles(filtered);
+
+		for (const item of sorted) {
 			const indentStr = '\t'.repeat(indent);
 			if (item instanceof TFile) {
-				result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
+				if (this.yaml.hideLinkList) {
+					result.push(`${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
+				} else {
+					result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
+				}
 			} else if (item instanceof TFolder) {
-				let line = `${indentStr}- **${item.name}**`;
+				const isFirstLevelSub = item.path.split('/').length === this.yaml.folderPath.split('/').length + 1;
+				if (!this.yaml.showEmptyFolders && item.children.length === 0 && !this.yaml.onlyIncludeSubfolders) {
+					continue;
+				} else if (this.yaml.onlyIncludeSubfolders && !isFirstLevelSub && item.children.length === 0) {
+					continue;
+				}
+
+				let line = `${indentStr}- ${item.name}`;
+				if (this.yaml.hideLinkList) {
+					line += ' <span class="fv-link-list-item"></span>';
+				}
+
 				let folderNote: TFile | null | undefined = null;
 				if (this.plugin instanceof FolderNotesPlugin) {
 					folderNote = getFolderNote(this.plugin, item.path);
 				}
+
 				if (folderNote) {
-					line = `${indentStr}- **[[${folderNote.path}|${item.name}]]**`;
+					line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
+					if (this.yaml.hideLinkList) {
+						line += ' <span class="fv-link-list-item"></span>';
+					}
 				}
+
 				result.push(line);
 				const children = item.children.filter(
 					(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
 				);
 				if (children.length > 0) {
-					result.push(...this.buildLinkList(children, indent + 1));
+					const childLinks = await this.buildLinkList(children, indent + 1);
+					result.push(...childLinks);
 				}
 			}
 		}
@@ -443,6 +506,15 @@ export class FolderOverview {
 	fileMenu(file: TFile, e: MouseEvent) {
 		const plugin = this.plugin;
 		const fileMenu = new Menu();
+
+		fileMenu.addItem((item) => {
+			item.setTitle('Edit folder overview');
+			item.setIcon('pencil');
+			item.onClick(async () => {
+				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin.settings as any as overviewSettings).open();
+			});
+		});
+
 		fileMenu.addSeparator();
 
 		fileMenu.addItem((item) => {
@@ -472,6 +544,15 @@ export class FolderOverview {
 	folderMenu(folder: TFolder, e: MouseEvent) {
 		const plugin = this.plugin;
 		const folderMenu = new Menu();
+
+		folderMenu.addItem((item) => {
+			item.setTitle('Edit folder overview');
+			item.setIcon('pencil');
+			item.onClick(async () => {
+				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin.settings as any as overviewSettings).open();
+			});
+		});
+
 		folderMenu.addSeparator();
 
 		folderMenu.addItem((item) => {
@@ -500,6 +581,20 @@ export class FolderOverview {
 		folderMenu.showAtPosition({ x: e.pageX, y: e.pageY });
 	}
 
+	editOverviewContextMenu(e: MouseEvent) {
+		const plugin = this.plugin;
+		const menu = new Menu();
+
+		menu.addItem((item) => {
+			item.setTitle('Edit folder overview');
+			item.setIcon('pencil');
+			item.onClick(async () => {
+				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin.settings as any as overviewSettings).open();
+			});
+		});
+		menu.showAtPosition({ x: e.pageX, y: e.pageY });
+	}
+
 	getElFromOverview(path: string): HTMLElement | null {
 		const el = this.listEl.querySelector(`[data-path='${CSS.escape(path)}']`) as HTMLElement | null;
 		return el;
@@ -508,7 +603,7 @@ export class FolderOverview {
 
 }
 
-export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, el: HTMLElement, yaml: overviewSettings) {
+export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, el: HTMLElement, yaml: overviewSettings, addLinkList: boolean) {
 	const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
 	if (!(file instanceof TFile)) return;
 	let stringYaml = stringifyYaml(yaml);
@@ -524,10 +619,14 @@ export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugi
 			if (lineEnd === -1 || !lineEnd) return text;
 			const lineLength = lineEnd - lineStart;
 			const lines = text.split('\n');
-			lines.splice(lineStart, lineLength + 1, `\`\`\`folder-overview\n${stringYaml}\`\`\``);
+			let overviewBlock = `\`\`\`folder-overview\n${stringYaml}\`\`\``;
+			overviewBlock += addLinkList ? `\n<span class="fv-link-list-start" id="${yaml.id}"></span>\n<span class="fv-link-list-end" id="${yaml.id}"></span>` : '';
+			lines.splice(lineStart, lineLength + 1, overviewBlock);
 			return lines.join('\n');
 		}
-		return `\`\`\`folder-overview\n${stringYaml}\`\`\``;
+		let overviewBlock = `\`\`\`folder-overview\n${stringYaml}\`\`\``;
+		overviewBlock += addLinkList ? `\n<span class="fv-link-list-start" id="${yaml.id}"></span>\n<span class="fv-link-list-end" id="${yaml.id}"></span>` : '';
+		return overviewBlock;
 	});
 }
 
@@ -563,22 +662,27 @@ export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlu
 	return overviews;
 }
 
-export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesPlugin, overviewId: string, file: TFile, newYaml: overviewSettings) {
-	plugin.app.vault.process(file, (text) => {
+export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesPlugin, overviewId: string, file: TFile, newYaml: overviewSettings, addLinkList: boolean) {
+	await plugin.app.vault.process(file, (text) => {
 		const yamlBlocks = text.match(/```folder-overview\n([\s\S]*?)```/g);
 		if (!yamlBlocks) return text;
 		for (const block of yamlBlocks) {
 			const yaml = parseYaml(block.replace('```folder-overview\n', '').replace('```', ''));
 			if (!yaml) continue;
 			if (yaml.id === overviewId) {
-				const stringYaml = stringifyYaml(newYaml);
-				const newBlock = `\`\`\`folder-overview\n${stringYaml}\`\`\``;
+				let stringYaml = stringifyYaml(newYaml);
+				if (stringYaml[stringYaml.length - 1] !== '\n') {
+					stringYaml += '\n';
+				}
+				let newBlock = `\`\`\`folder-overview\n${stringYaml}\`\`\``;
+				if (addLinkList) {
+					newBlock += `\n<span class="fv-link-list-start" id="${newYaml.id}"></span>\n<span class="fv-link-list-end" id="${newYaml.id}"></span>`;
+				}
 				text = text.replace(block, newBlock);
 			}
 		}
 		return text;
 	});
-
 }
 
 export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null) {
