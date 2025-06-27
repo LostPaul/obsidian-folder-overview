@@ -1,6 +1,6 @@
 import FolderNotesPlugin from '../../main';
 import FolderOverviewPlugin from './main';
-import { Menu, Editor, MarkdownView, stringifyYaml } from 'obsidian';
+import { Menu, Editor, MarkdownView, stringifyYaml, Notice } from 'obsidian';
 
 export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNotesPlugin) {
 	plugin.addCommand({
@@ -56,6 +56,18 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 				item.setTitle('Insert folder overview')
 					.setIcon('edit')
 					.onClick(() => {
+						if ((plugin.settings as any).firstTimeInsertOverview) {
+							(plugin.settings as any).firstTimeInsertOverview = false;
+							plugin.saveSettings();
+							const frag = document.createDocumentFragment();
+							const text = document.createTextNode('You can edit the overview using the "Edit folder overview" command from the command palette. To find more about folder overview, check the plugin documentation: ');
+							const link = document.createElement('a');
+							link.href = 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/';
+							link.textContent = 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/';
+							frag.appendChild(text);
+							frag.appendChild(link);
+							new Notice(frag);
+						}
 						const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
 						json.id = crypto.randomUUID();
 						const yaml = stringifyYaml(json);
