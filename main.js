@@ -8206,10 +8206,10 @@ var FolderOverviewPlugin = class extends import_obsidian48.Plugin {
   }
   async loadSettings() {
     const data = await this.loadData();
-    if (data.firstTimeInsertOverview === void 0) {
-      data.firstTimeInsertOverview = false;
-    }
     this.settings = Object.assign({}, DEFAULT_SETTINGS2, data);
+    if ((data == null ? void 0 : data.firstTimeInsertOverview) === void 0) {
+      this.settings.firstTimeInsertOverview = true;
+    }
   }
   async saveSettings() {
     await this.saveData(this.settings);
