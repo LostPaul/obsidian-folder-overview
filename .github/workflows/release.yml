@@ -32,3 +32,7 @@ jobs:
         run: |
           rm -f main.js
           echo "main.js has been deleted after release."
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "Remove main.js" || echo "No changes to commit"
+          git push origin main
