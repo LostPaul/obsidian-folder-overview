@@ -1,7 +1,7 @@
 {
 	"id": "folder-overview",
 	"name": "Folder overview",
-	"version": "0.4.4",
+	"version": "0.4.5",
 	"minAppVersion": "0.15.0",
 	"description": "Provides a dynamic overview of your vault or folders in the format of a code block.",
 	"author": "Lost Paul",
