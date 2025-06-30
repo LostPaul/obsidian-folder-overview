@@ -5,7 +5,7 @@ import { getFolderPathFromString } from '../../functions/utils';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 
-export function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: overviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
+export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: overviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
 	const overviewList = folderOverview.listEl;
 	overviewList?.empty();
 	let tFolder = plugin.app.vault.getAbstractFileByPath(yaml.folderPath);
@@ -23,6 +23,7 @@ export function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlu
 	if (!files) { return; }
 	const ul = folderOverview.listEl;
 	const sourceFolderPath = tFolder.path;
+	files = await folderOverview.filterFiles(files, plugin, sourceFolderPath, yaml.depth, folderOverview.pathBlacklist);
 
 	const folders = folderOverview.sortFiles(files.filter((f) => f instanceof TFolder));
 	files = folderOverview.sortFiles(files.filter((f) => f instanceof TFile));

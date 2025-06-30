@@ -7245,7 +7245,7 @@ var FileExplorerOverview = class {
 
 // src/obsidian-folder-overview/src/ListStyle.ts
 var import_obsidian44 = require("obsidian");
-function renderListOverview(plugin, ctx, root, yaml, pathBlacklist, folderOverview) {
+async function renderListOverview(plugin, ctx, root, yaml, pathBlacklist, folderOverview) {
   const overviewList = folderOverview.listEl;
   overviewList == null ? void 0 : overviewList.empty();
   let tFolder = plugin.app.vault.getAbstractFileByPath(yaml.folderPath);
@@ -7266,6 +7266,7 @@ function renderListOverview(plugin, ctx, root, yaml, pathBlacklist, folderOvervi
   }
   const ul = folderOverview.listEl;
   const sourceFolderPath = tFolder.path;
+  files = await folderOverview.filterFiles(files, plugin, sourceFolderPath, yaml.depth, folderOverview.pathBlacklist);
   const folders = folderOverview.sortFiles(files.filter((f) => f instanceof import_obsidian44.TFolder));
   files = folderOverview.sortFiles(files.filter((f) => f instanceof import_obsidian44.TFile));
   folders.forEach((file) => {
@@ -7794,14 +7795,14 @@ var FolderOverview = class {
     const filteredFiles = await Promise.all(files.map(async (file) => {
       var _a, _b;
       const folderPath = getFolderPathFromString2(file.path);
-      const isBlacklisted = pathBlacklist.includes(file.path);
+      const dontShowFolderNote = pathBlacklist.includes(file.path);
       const isSubfolder = sourceFolderPath === "/" || folderPath.startsWith(sourceFolderPath);
       const isSourceFile = file.path === this.sourceFilePath;
       let isExcludedFromOverview = false;
       if (plugin instanceof FolderNotesPlugin) {
         isExcludedFromOverview = (_b = (_a = getExcludedFolder(plugin, file.path, true)) == null ? void 0 : _a.excludeFromFolderOverview) != null ? _b : false;
       }
-      if (isBlacklisted && !this.yaml.showFolderNotes || !isSubfolder || isSourceFile || isExcludedFromOverview) {
+      if (dontShowFolderNote && !this.yaml.showFolderNotes || !isSubfolder || isSourceFile || isExcludedFromOverview) {
         return null;
       }
       const fileDepth = file.path.split("/").length - (sourceFolderPath === "/" ? 0 : sourceFolderPath.split("/").length);

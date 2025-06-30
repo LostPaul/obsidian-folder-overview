@@ -238,7 +238,6 @@ export class FolderOverview {
 		}
 
 		files = (await this.filterFiles(files, plugin, sourceFolderPath, this.yaml.depth, this.pathBlacklist)).filter((file): file is TAbstractFile => file !== null);
-
 		if (!this.yaml.includeTypes.includes('folder')) {
 			files = this.getAllFiles(files, sourceFolderPath, this.yaml.depth);
 		}
@@ -413,10 +412,10 @@ export class FolderOverview {
 		}, { capture: true });
 	}
 
-	async filterFiles(files: TAbstractFile[], plugin: FolderOverviewPlugin | FolderNotesPlugin, sourceFolderPath: string, depth: number, pathBlacklist: string[]) {
+	async filterFiles(files: TAbstractFile[], plugin: FolderOverviewPlugin | FolderNotesPlugin, sourceFolderPath: string, depth: number, pathBlacklist: string[]): Promise<TAbstractFile[]> {
 		const filteredFiles = await Promise.all(files.map(async (file) => {
 			const folderPath = getFolderPathFromString(file.path);
-			const isBlacklisted = pathBlacklist.includes(file.path);
+			const dontShowFolderNote = pathBlacklist.includes(file.path);
 			const isSubfolder = sourceFolderPath === '/' || folderPath.startsWith(sourceFolderPath);
 			const isSourceFile = file.path === this.sourceFilePath;
 			let isExcludedFromOverview = false;
@@ -425,7 +424,7 @@ export class FolderOverview {
 				isExcludedFromOverview = (getExcludedFolder(plugin, file.path, true))?.excludeFromFolderOverview ?? false;
 			}
 
-			if ((isBlacklisted && !this.yaml.showFolderNotes) || !isSubfolder || isSourceFile || isExcludedFromOverview) {
+			if ((dontShowFolderNote && !this.yaml.showFolderNotes) || !isSubfolder || isSourceFile || isExcludedFromOverview) {
 				return null;
 			}
 
@@ -433,7 +432,7 @@ export class FolderOverview {
 			return fileDepth <= depth ? file : null;
 		}));
 
-		return filteredFiles.filter((file) => file !== null);
+		return filteredFiles.filter((file) => file !== null) as TAbstractFile[];
 	}
 
 
