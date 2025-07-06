@@ -703,18 +703,27 @@ export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesP
 	});
 }
 
-export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null) {
+export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null, sourceFile?: TFile): string {
 	const sourceFolderPath = overview.folderPath.trim();
-	const title = overview.title;
-	if (folder?.path === '/' && sourceFolderPath === '' || sourceFolderPath === '/') {
-		return title.replace('{{folderName}}', 'Vault');
-	} else if (folder && sourceFolderPath === '') {
-		return title.replace('{{folderName}}', folder.name);
-	} else if (sourceFolderPath !== '') {
-		const newSourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
-		if (newSourceFolder instanceof TFolder) {
-			return title.replace('{{folderName}}', newSourceFolder.name);
-		}
+	let title = overview.title;
+
+	const variables: Record<string, string> = {
+		'folderName': folder?.path === '/' || sourceFolderPath === '/' ? 'Vault' : folder?.name ?? '',
+		'folderPath': folder?.path ?? sourceFolderPath ?? '',
+		'filePath': sourceFile?.path ?? '',
+		'fileName': sourceFile instanceof TFile ? sourceFile.basename : '',
+	};
+
+	if (sourceFile instanceof TFile) {
+		const fileCache = plugin.app.metadataCache.getFileCache(sourceFile);
+		const frontmatter = fileCache?.frontmatter ?? {};
+		const propertyRegex = /\{\{properties\.([\w-]+)\}\}/g;
+
+		title = title.replace(propertyRegex, (_, prop) => {
+			const value = frontmatter[prop];
+			return value !== undefined ? String(value) : '';
+		});
+		title = title.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] ?? '');
 	}
 
 	return title;

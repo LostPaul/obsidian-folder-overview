@@ -101,9 +101,10 @@ export class FolderOverviewView extends ItemView {
 
 						const options = overviews.reduce((acc, overview) => {
 							const title = parseOverviewTitle(
-                                overview as any as overviewSettings,
-                                plugin,
-                                activeFile.parent
+								overview as any as overviewSettings,
+								plugin,
+								activeFile.parent,
+								activeFile
 							);
 
 							const count = (titleCounts[title] || 0) + 1;
