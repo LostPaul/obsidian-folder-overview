@@ -5,10 +5,12 @@ import { DEFAULT_SETTINGS, SettingsTab } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
 import FolderNotesPlugin from '../../main';
+import { FrontMatterTitlePluginHandler } from './FmtpHandler';
 
 export default class FolderOverviewPlugin extends Plugin {
 	settings: overviewSettings;
 	settingsTab: SettingsTab;
+	fmtpHandler: FrontMatterTitlePluginHandler;
 	async onload() {
 		await this.loadSettings();
 		this.settingsTab = new SettingsTab(this);
@@ -20,6 +22,10 @@ export default class FolderOverviewPlugin extends Plugin {
 			this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
 				return new FolderOverviewView(leaf, this);
 			});
+
+			if (this.app.plugins.getPlugin('obsidian-front-matter-title-plugin')) {
+				this.fmtpHandler = new FrontMatterTitlePluginHandler(this);
+			}
 		});
 
 		this.registerMarkdownCodeBlockProcessor('folder-overview', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {

@@ -27,10 +27,10 @@ export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNo
 
 	const folders = folderOverview.sortFiles(files.filter((f) => f instanceof TFolder));
 	files = folderOverview.sortFiles(files.filter((f) => f instanceof TFile));
-	folders.forEach((file) => {
+	folders.forEach(async (file) => {
 		if (file instanceof TFolder) {
 			if (yaml.includeTypes.includes('folder')) {
-				const folderItem = addFolderList(plugin, ul, folderOverview.pathBlacklist, file, folderOverview);
+				const folderItem = await addFolderList(plugin, ul, folderOverview.pathBlacklist, file, folderOverview);
 				if (!folderItem) { return; }
 				goThroughFolders(plugin, folderItem, file, folderOverview.yaml.depth, sourceFolderPath, ctx, folderOverview.yaml, folderOverview.pathBlacklist, folderOverview.yaml.includeTypes, folderOverview.yaml.disableFileTag, folderOverview);
 			} else {
@@ -62,7 +62,7 @@ function debounce(func: Function, wait: number) {
 	};
 }
 
-export function addFolderList(plugin: FolderOverviewPlugin | FolderNotesPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], folder: TFolder, folderOverview: FolderOverview) {
+export async function addFolderList(plugin: FolderOverviewPlugin | FolderNotesPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], folder: TFolder, folderOverview: FolderOverview) {
 	folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
 	const isFirstLevelSub = folder.path.split('/').length === folderOverview.yaml.folderPath.split('/').length + 1;
 	if (!folderOverview.yaml.showEmptyFolders && folder.children.length === 0 && !folderOverview.yaml.onlyIncludeSubfolders) {
@@ -77,7 +77,12 @@ export function addFolderList(plugin: FolderOverviewPlugin | FolderNotesPlugin |
 		const folderNote = getFolderNote(plugin, folder.path);
 		if (folderNote instanceof TFile) {
 			const folderNoteLink = folderItem.createEl('a', { cls: 'folder-overview-list-item folder-name-item internal-link', href: folderNote.path });
-			folderNoteLink.innerText = folder.name;
+			if (folderOverview.yaml.fmtpIntegration) {
+				folderNoteLink.innerText = await plugin.fmtpHandler?.getNewFileName(folderNote) ?? folder.name;
+			} else {
+				folderNoteLink.innerText = folder.name;
+			}
+
 			pathBlacklist.push(folderNote.path);
 			folderNoteLink.oncontextmenu = (e) => {
 				e.stopImmediatePropagation();
@@ -114,10 +119,10 @@ async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin
 	const folders = folderOverview.sortFiles(allFiles.filter((file): file is TFile => (file instanceof TFolder) && file !== null));
 	const ul = list.createEl('ul', { cls: 'folder-overview-list' });
 
-	folders.forEach((file) => {
+	folders.forEach(async (file) => {
 		if (file instanceof TFolder) {
 			if (yaml.includeTypes.includes('folder')) {
-				const folderItem = addFolderList(plugin, ul, pathBlacklist, file, folderOverview);
+				const folderItem = await addFolderList(plugin, ul, pathBlacklist, file, folderOverview);
 				if (!folderItem) { return; }
 				goThroughFolders(plugin, folderItem, file, depth, sourceFolderPath, ctx, yaml, pathBlacklist, includeTypes, disableFileTag, folderOverview);
 			} else {
@@ -137,7 +142,7 @@ async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin
 	});
 }
 
-function addFileList(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], file: TFile, includeTypes: string[], disableFileTag: boolean, folderOverview: FolderOverview) {
+async function addFileList(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], file: TFile, includeTypes: string[], disableFileTag: boolean, folderOverview: FolderOverview) {
 	if (includeTypes.length > 0 && !includeTypes.includes('all')) {
 		if (file.extension === 'md' && !includeTypes.includes('markdown')) return;
 		if (file.extension === 'canvas' && !includeTypes.includes('canvas')) return;
@@ -168,7 +173,12 @@ function addFileList(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTM
 
 	const nameItem = listItem.createEl('div', { cls: 'folder-overview-list-item' });
 	const link = nameItem.createEl('a', { cls: 'internal-link', href: file.path });
-	link.innerText = file.basename;
+	if (folderOverview.yaml.fmtpIntegration) {
+		link.innerText = await plugin.fmtpHandler?.getNewFileName(file) ?? file.basename;
+	} else {
+		link.innerText = file.basename;
+	}
+
 	if (file.extension !== 'md' && !disableFileTag) {
 		nameItem.createDiv({ cls: 'nav-file-tag' }).innerText = file.extension;
 	}

@@ -34,6 +34,7 @@ export type overviewSettings = {
 	hideLinkList: boolean;
 	hideFolderOverview: boolean;
 	useActualLinks: boolean;
+	fmtpIntegration: boolean;
 };
 
 export class FolderOverview {
@@ -131,6 +132,7 @@ export class FolderOverview {
 			hideLinkList: yaml?.hideLinkList ?? defaultSettings.hideLinkList,
 			hideFolderOverview: yaml?.hideFolderOverview ?? defaultSettings.hideFolderOverview,
 			useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
+			fmtpIntegration: yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
 		};
 
 		const customChild = new CustomMarkdownRenderChild(el, this);
@@ -198,7 +200,7 @@ export class FolderOverview {
 		let files: TAbstractFile[] = [];
 
 		const sourceFile = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
-		if (!sourceFile) return;
+		if (!(sourceFile instanceof TFile)) return;
 
 		let sourceFolderPath = this.yaml.folderPath.trim() || getFolderPathFromString(ctx.sourcePath);
 		if (!ctx.sourcePath.includes('/')) {
@@ -210,13 +212,30 @@ export class FolderOverview {
 		const sourceFolder = this.sourceFolder;
 
 		if (this.yaml.showTitle) {
-			if (sourceFolder && sourceFolderPath !== '/') {
-				titleEl.innerText = this.yaml.title.replace('{{folderName}}', sourceFolder.name);
-			} else if (sourceFolderPath === '/') {
-				titleEl.innerText = this.yaml.title.replace('{{folderName}}', 'Vault');
-			} else {
-				titleEl.innerText = this.yaml.title.replace('{{folderName}}', '');
-			}
+			const variables: Record<string, string> = {
+				'folderName': sourceFolder?.path === '/' || sourceFolderPath === '/' ? 'Vault' : sourceFolder?.name ?? '',
+				'folderPath': sourceFolder?.path ?? sourceFolderPath ?? '',
+				'filePath': sourceFile.path,
+				'fileName': sourceFile instanceof TFile ? sourceFile.basename : '',
+				'fmtpFileName': await this.plugin.fmtpHandler?.getNewFileName(sourceFile) ?? '',
+			};
+
+			const fileCache = this.plugin.app.metadataCache.getFileCache(sourceFile);
+			const frontmatter = fileCache?.frontmatter ?? {};
+			const propertyRegex = /\{\{properties\.([\w-]+)\}\}/g;
+
+			let title = this.yaml.title;
+
+			// Replace properties.<name>
+			title = title.replace(propertyRegex, (_, prop) => {
+				const value = frontmatter[prop];
+				return value !== undefined ? String(value) : '';
+			});
+
+			// Replace other variables
+			title = title.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] ?? '');
+
+			titleEl.innerText = title;
 		}
 
 		if (!sourceFolder && (sourceFolderPath !== '/' && sourceFolderPath !== '')) { return new Notice('Folder overview: Couldn\'t find the folder'); }

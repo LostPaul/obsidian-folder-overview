@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: overviewSettings = {
 	hideLinkList: true,
 	hideFolderOverview: false,
 	useActualLinks: false,
+	fmtpIntegration: false,
 };
 
 export class SettingsTab extends PluginSettingTab {
@@ -415,6 +416,20 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 			});
 	});
 
+	createOrReplaceSetting(contentEl, 'fmtp-integration', changedSection, (settingEl) => {
+		new Setting(settingEl)
+			.setName('Front Matter Title Plugin integration')
+			.setDesc('Replace the folder/file name with the title from the Front Matter Title Plugin. This requires the plugin to be installed and enabled.')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(yaml.fmtpIntegration)
+					.onChange(async (value) => {
+						yaml.fmtpIntegration = value;
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
+					})
+			);
+	});
+
 	updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 }
 
@@ -440,6 +455,7 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
 		'setting-allow-drag-and-drop': yaml.style === 'explorer',
 		'setting-hide-folder-overview': !yaml.hideLinkList && yaml.useActualLinks,
 		'setting-hide-link-list': !yaml.hideFolderOverview && yaml.useActualLinks,
+		'setting-fmtp-integration': !!plugin.app.plugins.getPlugin('obsidian-front-matter-title-plugin'),
 	});
 	if (!yaml.id) {
 		plugin.saveSettings();

@@ -59,7 +59,6 @@ export class FileExplorerOverview {
 		}
 
 		if (!folderElement && !tFolder) return;
-		// wait until the file explorer is loaded
 
 		const sourceFolderPath = tFolder?.path || '';
 
@@ -207,9 +206,14 @@ export class FileExplorerOverview {
 				},
 			});
 
+			let folderName = child.name;
+			if (yaml.fmtpIntegration && plugin instanceof FolderNotesPlugin && folderNote) {
+				folderName = await plugin.fmtpHandler?.getNewFileName(folderNote) ?? child.name;
+			}
+
 			const folderTitleText = folderTitle?.createDiv({
 				cls: 'tree-item-inner nav-folder-title-content',
-				text: child.name,
+				text: folderName,
 			});
 
 			if (folderTitleText && !folderNote) {
@@ -382,9 +386,14 @@ export class FileExplorerOverview {
 			folderOverview.fileMenu(child, e);
 		};
 
+		let fileName = child.basename;
+		if (yaml.fmtpIntegration) {
+			fileName = await plugin.fmtpHandler?.getNewFileName(child) ?? child.basename;
+		}
+
 		fileTitle.createDiv({
 			cls: 'tree-item-inner nav-file-title-content',
-			text: child.basename,
+			text: fileName,
 		});
 
 		if (child.extension !== 'md' && !yaml.disableFileTag) {
