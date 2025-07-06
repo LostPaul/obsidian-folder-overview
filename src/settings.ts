@@ -125,7 +125,15 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 	createOrReplaceSetting(contentEl, 'title-container-fn', changedSection, (settingEl) => {
 		new Setting(settingEl)
 			.setName('Title')
-			.setDesc('Choose the title of the folder overview')
+			.setDesc(
+				createFragment((frag) => {
+					const link = frag.createEl('a', {
+						text: 'Find more information about the title in the documentation. There is also a list of variables you can use',
+						href: 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#title',
+					});
+					link.target = '_blank';
+				})
+			)
 			.addText((text) =>
 				text
 					.setValue(yaml?.title || '{{folderName}} overview')
@@ -139,7 +147,16 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 	createOrReplaceSetting(contentEl, 'folder-path', changedSection, (settingEl) => {
 		const folderPathSetting = new Setting(settingEl)
 			.setName('Folder path for the overview')
-			.setDesc('Choose the folder path for the overview')
+			.setDesc(
+				createFragment((frag) => {
+					frag.appendText('The overview will show the subfolders and files of the folder you choose here. ');
+					const link = frag.createEl('a', {
+						text: 'Find more information about this setting in the documentation.',
+						href: 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#folder-path',
+					});
+					link.target = '_blank';
+				})
+			)
 			.addSearch((search) => {
 				new FolderSuggest(search.inputEl, plugin, false);
 				search
