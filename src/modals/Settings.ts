@@ -1,5 +1,5 @@
 import { App, Modal, MarkdownPostProcessorContext, TFile, SettingTab } from 'obsidian';
-import { overviewSettings, includeTypes, updateYaml } from '../FolderOverview';
+import { defaultOverviewSettings, includeTypes, updateYaml } from '../FolderOverview';
 import { getFolderPathFromString } from '../utils/functions';
 import { createOverviewSettings } from '../settings';
 import FolderOverviewPlugin from '../main';
@@ -7,11 +7,11 @@ import FolderNotesPlugin from '../../../main';
 export class FolderOverviewSettings extends Modal {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
 	app: App;
-	yaml: overviewSettings;
+	yaml: defaultOverviewSettings;
 	ctx: MarkdownPostProcessorContext;
 	el: HTMLElement;
-	defaultSettings: overviewSettings;
-	constructor(app: App, plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: overviewSettings, ctx: MarkdownPostProcessorContext | null, el: HTMLElement | null, defaultSettings: overviewSettings) {
+	defaultSettings: defaultOverviewSettings;
+	constructor(app: App, plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, ctx: MarkdownPostProcessorContext | null, el: HTMLElement | null, defaultSettings: defaultOverviewSettings) {
 		super(app);
 		this.plugin = plugin;
 		this.app = app;
@@ -60,9 +60,9 @@ export class FolderOverviewSettings extends Modal {
 	}
 
 	display(contentEl: HTMLElement,
-		yaml: overviewSettings,
+		yaml: defaultOverviewSettings,
 		plugin: FolderOverviewPlugin | FolderNotesPlugin,
-		defaultSettings: overviewSettings,
+		defaultSettings: defaultOverviewSettings,
 		display: CallableFunction,
 		el?: HTMLElement,
 		ctx?: MarkdownPostProcessorContext,

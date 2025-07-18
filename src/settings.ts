@@ -1,5 +1,5 @@
 import { MarkdownPostProcessorContext, normalizePath, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
-import { updateYaml, updateYamlById, overviewSettings, includeTypes } from './FolderOverview';
+import { updateYaml, updateYamlById, defaultOverviewSettings, includeTypes } from './FolderOverview';
 import { FolderSuggest } from './suggesters/FolderSuggester';
 import { ListComponent } from './utils/ListComponent';
 import { FolderOverviewSettings } from './modals/Settings';
@@ -7,9 +7,11 @@ import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 
 
+export type globalSettings = {
+	autoUpdateLinks: boolean;
+}
 
-
-export const DEFAULT_SETTINGS: overviewSettings = {
+export const OVERVIEW_SETTINGS: defaultOverviewSettings = {
 	id: '',
 	folderPath: '',
 	title: '{{folderName}} overview',
@@ -34,6 +36,21 @@ export const DEFAULT_SETTINGS: overviewSettings = {
 	fmtpIntegration: false,
 };
 
+export const GLOBAL_SETTINGS: globalSettings = {
+	autoUpdateLinks: false,
+};
+
+export type defaultSettings = {
+	defaultOverviewSettings: defaultOverviewSettings;
+	globalSettings: globalSettings;
+};
+
+export const DEFAULT_SETTINGS = {
+	defaultOverviewSettings: OVERVIEW_SETTINGS,
+	globalSettings: GLOBAL_SETTINGS,
+	firstTimeInsertOverview: false,
+};
+
 export class SettingsTab extends PluginSettingTab {
 	plugin: FolderOverviewPlugin;
 
@@ -43,12 +60,38 @@ export class SettingsTab extends PluginSettingTab {
 
 	display() {
 		const { containerEl } = this;
-		containerEl.empty();
-		containerEl.createEl('p', { text: 'Edit the default settings of folder overviews', cls: 'setting-item-description' });
+		containerEl.createEl('h3', { text: 'Global settings' });
+
+		new Setting(containerEl)
+			.setName('Auto-update links without opening the overview')
+			.setDesc('If enabled, the links that appear in the graph view will be updated even when you don\'t have the overview open somewhere.')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.globalSettings.autoUpdateLinks)
+					.onChange(async (value) => {
+						this.plugin.settings.globalSettings.autoUpdateLinks = value;
+						await this.plugin.saveSettings();
+						if (value) {
+							this.plugin.fvIndexDB.init(true);
+						} else {
+							this.plugin.fvIndexDB.active = false;
+						}
+					})
+			);
+
+		containerEl.createEl('h3', { text: 'Overviews default settings' });
+		const pEl = containerEl.createEl('p', {
+			text: 'Edit the default settings for new folder overviews, ',
+			cls: 'setting-item-description',
+		});
+		const span = createSpan({ text: "this won't apply to already existing overviews.", cls: '' });
+		const accentColor = (this.plugin.app.vault.getConfig('accentColor') as string) || '#7d5bed';
+		span.setAttr('style', `color: ${accentColor};`);
+		pEl.appendChild(span);
 
 		this.display = this.display.bind(this);
 
-		createOverviewSettings(containerEl, this.plugin.settings, this.plugin, this.plugin.settings, this.display, undefined, undefined, undefined, this);
+		createOverviewSettings(containerEl, this.plugin.settings.defaultOverviewSettings, this.plugin, this.plugin.settings.defaultOverviewSettings, this.display, undefined, undefined, undefined, this);
 	}
 }
 
@@ -74,7 +117,7 @@ const createOrReplaceSetting = (
 };
 
 
-export async function createOverviewSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string | null) {
+export async function createOverviewSettings(contentEl: HTMLElement, yaml: defaultOverviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: defaultOverviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string | null) {
 	changedSection = changedSection ?? null;
 
 	createOrReplaceSetting(contentEl, 'auto-sync', changedSection, (settingEl) => {
@@ -253,7 +296,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 
 		if ((yaml?.includeTypes?.length || 0) < 8 && !yaml.includeTypes?.includes('all')) {
 			setting.addDropdown((dropdown) => {
-				if (!yaml.includeTypes) yaml.includeTypes = (plugin instanceof FolderNotesPlugin) ? plugin.settings.defaultOverview.includeTypes : plugin.settings.includeTypes || [];
+				if (!yaml.includeTypes) yaml.includeTypes = (plugin instanceof FolderNotesPlugin) ? plugin.settings.defaultOverview.includeTypes : plugin.settings.defaultOverviewSettings.includeTypes || [];
 				yaml.includeTypes = yaml.includeTypes.map((type: string) => type.toLowerCase()) as includeTypes[];
 				const options = [
 					{ value: 'markdown', label: 'Markdown' },
@@ -450,7 +493,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: overv
 	updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 }
 
-async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, addLinkList: boolean, defaultSettings: overviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
+async function updateSettings(contentEl: HTMLElement, yaml: defaultOverviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, addLinkList: boolean, defaultSettings: defaultOverviewSettings, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null) {
 	let showDisableFileTag = false;
 	yaml.includeTypes?.forEach((type: string) => {
 		if (type !== 'markdown' && type !== 'folder') {
@@ -491,7 +534,7 @@ async function updateSettings(contentEl: HTMLElement, yaml: overviewSettings, pl
 	}
 }
 
-function refresh(contentEl: HTMLElement, yaml: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: overviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string) {
+function refresh(contentEl: HTMLElement, yaml: defaultOverviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, defaultSettings: defaultOverviewSettings, display: CallableFunction, el?: HTMLElement, ctx?: MarkdownPostProcessorContext, file?: TFile | null, settingsTab?: PluginSettingTab, modal?: FolderOverviewSettings, changedSection?: string) {
 	if (file) {
 		contentEl = contentEl.parentElement as HTMLElement;
 	}

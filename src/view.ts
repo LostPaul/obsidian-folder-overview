@@ -1,5 +1,5 @@
 import { ItemView, Setting, TFile, WorkspaceLeaf, MarkdownPostProcessorContext, SettingTab } from 'obsidian';
-import { getOverviews, overviewSettings, parseOverviewTitle } from './FolderOverview';
+import { getOverviews, defaultOverviewSettings, parseOverviewTitle } from './FolderOverview';
 import { createOverviewSettings } from './settings';
 import FolderOverviewPlugin from './main';
 export const FOLDER_OVERVIEW_VIEW = 'folder-overview-view';
@@ -10,8 +10,8 @@ export class FolderOverviewView extends ItemView {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
 	activeFile: TFile | null;
 	overviewId: string | null;
-	yaml: overviewSettings;
-	defaultSettings: overviewSettings;
+	yaml: defaultOverviewSettings;
+	defaultSettings: defaultOverviewSettings;
 	contentEl: HTMLElement = this.containerEl.children[1] as HTMLElement;
 	changedSection: string | null | undefined;
 	modal: FolderOverviewSettings;
@@ -22,7 +22,7 @@ export class FolderOverviewView extends ItemView {
 
 		this.display = this.display.bind(this);
 		if (plugin instanceof FolderOverviewPlugin) {
-			this.defaultSettings = this.plugin.settings as any as overviewSettings;
+			this.defaultSettings = plugin.settings.defaultOverviewSettings;
 		} else if (plugin instanceof FolderNotesPlugin) {
 			this.defaultSettings = plugin.settings.defaultOverview;
 		}
@@ -53,9 +53,9 @@ export class FolderOverviewView extends ItemView {
 
 	async display(
 		contentEl: HTMLElement,
-		yaml: overviewSettings,
+		yaml: defaultOverviewSettings,
 		plugin: FolderOverviewPlugin | FolderNotesPlugin,
-		defaultSettings: overviewSettings,
+		defaultSettings: defaultOverviewSettings,
 		display: CallableFunction,
 		el?: HTMLElement,
 		ctx?: MarkdownPostProcessorContext,
@@ -101,7 +101,7 @@ export class FolderOverviewView extends ItemView {
 
 						const options = overviews.reduce((acc, overview) => {
 							const title = parseOverviewTitle(
-								overview as any as overviewSettings,
+								overview as any as defaultOverviewSettings,
 								plugin,
 								activeFile.parent,
 								activeFile
@@ -122,14 +122,14 @@ export class FolderOverviewView extends ItemView {
 						yaml = defaultSettings;
 						cb.setValue('default');
 					} else {
-						yaml = overviews.find((overview) => overview.id === yaml.id) as any as overviewSettings;
+						yaml = overviews.find((overview) => overview.id === yaml.id) as any as defaultOverviewSettings;
 					}
 
 					cb.onChange(async (value) => {
 						if (value === 'default') {
 							yaml = defaultSettings;
 						} else {
-							yaml = overviews.find((overview) => overview.id === value) as any as overviewSettings;
+							yaml = overviews.find((overview) => overview.id === value) as any as defaultOverviewSettings;
 						}
 						await display(contentEl, yaml, plugin, defaultSettings, display, undefined, undefined, activeFile, undefined, undefined, 'all');
 					});

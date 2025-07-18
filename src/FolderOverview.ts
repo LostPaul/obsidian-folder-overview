@@ -12,7 +12,7 @@ import { getFolder, getFolderNote } from '../../functions/folderNoteFunctions';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
-export type overviewSettings = {
+export type defaultOverviewSettings = {
 	id: string;
 	folderPath: string;
 	title: string;
@@ -39,7 +39,7 @@ export type overviewSettings = {
 
 export class FolderOverview {
 	emitter: CustomEventEmitter;
-	yaml: overviewSettings;
+	yaml: defaultOverviewSettings;
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
 	ctx: MarkdownPostProcessorContext;
 	source: string;
@@ -51,15 +51,15 @@ export class FolderOverview {
 	sourceFolder: TFolder | undefined | null;
 	root: HTMLElement;
 	listEl: HTMLUListElement;
-	defaultSettings: overviewSettings;
+	defaultSettings: defaultOverviewSettings;
 	sourceFile: TFile;
 
 	eventListeners: (() => void)[] = [];
-	constructor(plugin: FolderNotesPlugin | FolderOverviewPlugin, ctx: MarkdownPostProcessorContext, source: string, el: HTMLElement, defaultSettings: overviewSettings) {
+	constructor(plugin: FolderNotesPlugin | FolderOverviewPlugin, ctx: MarkdownPostProcessorContext, source: string, el: HTMLElement, defaultSettings: defaultOverviewSettings) {
 		this.plugin = plugin;
 		this.emitter = new CustomEventEmitter();
-		let yaml: overviewSettings = parseYaml(source);
-		if (!yaml) { yaml = {} as overviewSettings; }
+		let yaml: defaultOverviewSettings = parseYaml(source);
+		if (!yaml) { yaml = {} as defaultOverviewSettings; }
 		const includeTypes = yaml?.includeTypes || defaultSettings.includeTypes || ['folder', 'markdown'];
 		this.ctx = ctx;
 		this.source = source;
@@ -203,7 +203,7 @@ export class FolderOverview {
 		if (!(sourceFile instanceof TFile)) return;
 
 		let sourceFolderPath = this.yaml.folderPath.trim() || getFolderPathFromString(ctx.sourcePath);
-		if (!ctx.sourcePath.includes('/')) {
+		if (!sourceFolderPath) {
 			sourceFolderPath = '/';
 		}
 
@@ -256,16 +256,16 @@ export class FolderOverview {
 			files = sourceFolder.children;
 		}
 
-		files = (await this.filterFiles(files, plugin, sourceFolderPath, this.yaml.depth, this.pathBlacklist)).filter((file): file is TAbstractFile => file !== null);
+		files = (await filterFiles(files, plugin, sourceFolderPath, this.yaml.depth, this.pathBlacklist, this.yaml, this.sourceFile)).filter((file): file is TAbstractFile => file !== null);
 		if (!this.yaml.includeTypes.includes('folder')) {
-			files = this.getAllFiles(files, sourceFolderPath, this.yaml.depth);
+			files = getAllFiles(files, sourceFolderPath, this.yaml.depth);
 		}
 
 		if (files.length === 0) {
 			return this.addEditButton(root);
 		}
 
-		files = this.sortFiles(files);
+		files = sortFiles(files, this.yaml, this.plugin);
 
 		if (this.yaml.style === 'grid') {
 			const grid = root.createEl('div', { cls: 'folder-overview-grid' });
@@ -301,43 +301,12 @@ export class FolderOverview {
 
 		if (this.yaml.useActualLinks) {
 			setTimeout(() => {
-				this.updateLinkList(files);
+				updateLinkList(files, this.plugin, this.yaml, this.pathBlacklist, this.sourceFile);
 			}, 1000);
 		} else {
 			this.removeLinkList();
 		}
 		this.addEditButton(root);
-	}
-
-	updateLinkList(files: TAbstractFile[] = []) {
-		this.buildLinkList(files).then((fileLinks: string[]) => {
-			this.plugin.app.vault.process(this.sourceFile, (text) => {
-				const lines = text.split('\n');
-				const linkListStart = `<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
-				const linkListEnd = `<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
-
-				const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
-				const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
-
-				const linkListExists = startIdx !== -1 && endIdx !== -1;
-				const isInvalidLinkList = endIdx < startIdx;
-				if (!linkListExists || isInvalidLinkList) {
-					return text;
-				}
-
-				lines.splice(startIdx, endIdx - startIdx + 1);
-
-				// Add the file/folder links into the text
-				const newBlock = [
-					linkListStart,
-					...fileLinks,
-					linkListEnd,
-				];
-				lines.splice(startIdx, 0, ...newBlock);
-
-				return lines.join('\n');
-			});
-		});
 	}
 
 	removeLinkList() {
@@ -361,65 +330,6 @@ export class FolderOverview {
 		});
 	}
 
-	private async buildLinkList(items: TAbstractFile[], indent = 0): Promise<string[]> {
-		const result: string[] = [];
-		// Filter and sort items before building the link list
-		const filtered = (await this.filterFiles(
-			items,
-			this.plugin,
-			this.yaml.folderPath,
-			this.yaml.depth,
-			this.pathBlacklist
-		)).filter((file): file is TAbstractFile => file !== null);
-
-		const sorted = this.sortFiles(filtered);
-
-		for (const item of sorted) {
-			const indentStr = '\t'.repeat(indent);
-			if (item instanceof TFile) {
-				if (this.yaml.hideLinkList) {
-					result.push(`${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
-				} else {
-					result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
-				}
-			} else if (item instanceof TFolder) {
-				const isFirstLevelSub = item.path.split('/').length === this.yaml.folderPath.split('/').length + 1;
-				if (!this.yaml.showEmptyFolders && item.children.length === 0 && !this.yaml.onlyIncludeSubfolders) {
-					continue;
-				} else if (this.yaml.onlyIncludeSubfolders && !isFirstLevelSub && item.children.length === 0) {
-					continue;
-				}
-
-				let line = `${indentStr}- ${item.name}`;
-				if (this.yaml.hideLinkList) {
-					line += ' <span class="fv-link-list-item"></span>';
-				}
-
-				let folderNote: TFile | null | undefined = null;
-				if (this.plugin instanceof FolderNotesPlugin) {
-					folderNote = getFolderNote(this.plugin, item.path);
-				}
-
-				if (folderNote) {
-					line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
-					if (this.yaml.hideLinkList) {
-						line += ' <span class="fv-link-list-item"></span>';
-					}
-				}
-
-				result.push(line);
-				const children = item.children.filter(
-					(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
-				);
-				if (children.length > 0) {
-					const childLinks = await this.buildLinkList(children, indent + 1);
-					result.push(...childLinks);
-				}
-			}
-		}
-		return result;
-	}
-
 	addEditButton(root: HTMLElement) {
 		const editButton = root.createEl('button', { cls: 'folder-overview-edit-button' });
 		editButton.innerText = 'Edit overview';
@@ -427,98 +337,8 @@ export class FolderOverview {
 			e.stopImmediatePropagation();
 			e.preventDefault();
 			e.stopPropagation();
-			new FolderOverviewSettings(this.plugin.app as App, this.plugin, this.yaml, this.ctx, this.el, this.plugin.settings as any as overviewSettings).open();
+			new FolderOverviewSettings(this.plugin.app as App, this.plugin, this.yaml, this.ctx, this.el, this.plugin instanceof FolderNotesPlugin ? this.plugin.settings.defaultOverview : this.plugin.settings.defaultOverviewSettings).open();
 		}, { capture: true });
-	}
-
-	async filterFiles(files: TAbstractFile[], plugin: FolderOverviewPlugin | FolderNotesPlugin, sourceFolderPath: string, depth: number, pathBlacklist: string[]): Promise<TAbstractFile[]> {
-		const filteredFiles = await Promise.all(files.map(async (file) => {
-			const folderPath = getFolderPathFromString(file.path);
-			const dontShowFolderNote = pathBlacklist.includes(file.path);
-			const isSubfolder = sourceFolderPath === '/' || folderPath.startsWith(sourceFolderPath);
-			const isSourceFile = file.path === this.sourceFilePath;
-			let isExcludedFromOverview = false;
-
-			if (plugin instanceof FolderNotesPlugin) {
-				isExcludedFromOverview = (getExcludedFolder(plugin, file.path, true))?.excludeFromFolderOverview ?? false;
-			}
-
-			if ((dontShowFolderNote && !this.yaml.showFolderNotes) || !isSubfolder || isSourceFile || isExcludedFromOverview) {
-				return null;
-			}
-
-			const fileDepth = file.path.split('/').length - (sourceFolderPath === '/' ? 0 : sourceFolderPath.split('/').length);
-			return fileDepth <= depth ? file : null;
-		}));
-
-		return filteredFiles.filter((file) => file !== null) as TAbstractFile[];
-	}
-
-
-
-	sortFiles(files: TAbstractFile[]): TAbstractFile[] {
-		const yaml = this.yaml;
-
-		if (!yaml?.sortBy) {
-			yaml.sortBy = this.defaultSettings.sortBy ?? 'name';
-			yaml.sortByAsc = this.defaultSettings.sortByAsc ?? false;
-		}
-
-		const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-
-		files.sort((a, b) => {
-			if (a instanceof TFolder && !(b instanceof TFolder)) {
-				return -1;
-			}
-			if (!(a instanceof TFolder) && b instanceof TFolder) {
-				return 1;
-			}
-
-			if (a instanceof TFolder && b instanceof TFolder) {
-				return yaml.sortByAsc
-					? collator.compare(a.name, b.name)
-					: collator.compare(b.name, a.name);
-			}
-
-			if (a instanceof TFile && b instanceof TFile) {
-				if (yaml.sortBy === 'created') {
-					return yaml.sortByAsc ? a.stat.ctime - b.stat.ctime : b.stat.ctime - a.stat.ctime;
-				} else if (yaml.sortBy === 'modified') {
-					return yaml.sortByAsc ? a.stat.mtime - b.stat.mtime : b.stat.mtime - a.stat.mtime;
-				} else if (yaml.sortBy === 'name') {
-					return yaml.sortByAsc
-						? collator.compare(a.basename, b.basename)
-						: collator.compare(b.basename, a.basename);
-				}
-			}
-
-			return 0;
-		});
-
-		return files;
-	}
-
-
-	getAllFiles(files: TAbstractFile[], sourceFolderPath: string, depth: number) {
-		const allFiles: TAbstractFile[] = [];
-
-		const getDepth = (filePath: string) => {
-			return filePath.split('/').length - sourceFolderPath.split('/').length;
-		};
-
-		files.forEach((file) => {
-			const fileDepth = getDepth(file.path);
-
-			if (file instanceof TFolder) {
-				if (fileDepth < depth) {
-					allFiles.push(...this.getAllFiles(file.children, sourceFolderPath, depth));
-				}
-			} else {
-				allFiles.push(file);
-			}
-		});
-
-		return allFiles;
 	}
 
 	fileMenu(file: TFile, e: MouseEvent) {
@@ -529,7 +349,7 @@ export class FolderOverview {
 			item.setTitle('Edit folder overview');
 			item.setIcon('pencil');
 			item.onClick(async () => {
-				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin.settings as any as overviewSettings).open();
+				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin instanceof FolderNotesPlugin ? plugin.settings.defaultOverview : plugin.settings.defaultOverviewSettings).open();
 			});
 		});
 
@@ -567,7 +387,7 @@ export class FolderOverview {
 			item.setTitle('Edit folder overview');
 			item.setIcon('pencil');
 			item.onClick(async () => {
-				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin.settings as any as overviewSettings).open();
+				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin instanceof FolderNotesPlugin ? plugin.settings.defaultOverview : plugin.settings.defaultOverviewSettings).open();
 			});
 		});
 
@@ -607,7 +427,7 @@ export class FolderOverview {
 			item.setTitle('Edit folder overview');
 			item.setIcon('pencil');
 			item.onClick(async () => {
-				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin.settings as any as overviewSettings).open();
+				new FolderOverviewSettings(plugin.app as App, plugin, this.yaml, this.ctx, this.el, plugin instanceof FolderNotesPlugin ? plugin.settings.defaultOverview : plugin.settings.defaultOverviewSettings).open();
 			});
 		});
 		menu.showAtPosition({ x: e.pageX, y: e.pageY });
@@ -621,7 +441,7 @@ export class FolderOverview {
 
 }
 
-export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, el: HTMLElement, yaml: overviewSettings, addLinkList: boolean) {
+export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, el: HTMLElement, yaml: defaultOverviewSettings, addLinkList: boolean) {
 	const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
 	if (!(file instanceof TFile)) return;
 	let stringYaml = stringifyYaml(yaml);
@@ -663,7 +483,6 @@ export function getCodeBlockEndLine(text: string, startLine: number, count = 1) 
 }
 
 export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlugin, file: TFile | null) {
-	// is an object with unkown keys
 	if (!file) return [];
 	const overviews: { [key: string]: string }[] = [];
 	const content = await plugin.app.vault.read(file);
@@ -680,7 +499,7 @@ export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlu
 	return overviews;
 }
 
-export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesPlugin, overviewId: string, file: TFile, newYaml: overviewSettings, addLinkList: boolean) {
+export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesPlugin, overviewId: string, file: TFile, newYaml: defaultOverviewSettings, addLinkList: boolean) {
 	await plugin.app.vault.process(file, (text) => {
 		const yamlBlocks = text.match(/```folder-overview\n([\s\S]*?)```/g);
 		if (!yamlBlocks) return text;
@@ -703,7 +522,16 @@ export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesP
 	});
 }
 
-export function parseOverviewTitle(overview: overviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null, sourceFile?: TFile): string {
+export async function hasOverviewYaml(plugin: FolderOverviewPlugin | FolderNotesPlugin, file: TFile): Promise<boolean> {
+	const content = await plugin.app.vault.read(file);
+	if (!content) return false;
+
+	const yamlBlocks = content.match(/```folder-overview\n([\s\S]*?)```/g);
+	return !!yamlBlocks;
+}
+
+
+export function parseOverviewTitle(overview: defaultOverviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null, sourceFile?: TFile): string {
 	const sourceFolderPath = overview.folderPath.trim();
 	let title = overview.title;
 
@@ -741,3 +569,182 @@ class CustomMarkdownRenderChild extends MarkdownRenderChild {
 		this.folderOverview.disconnectListeners();
 	}
 }
+
+export function sortFiles(files: TAbstractFile[], yaml: defaultOverviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin): TAbstractFile[] {
+	if (!yaml?.sortBy) {
+		const defaultSettings = plugin instanceof FolderNotesPlugin ? plugin.settings.defaultOverview : plugin.settings.defaultOverviewSettings;
+		yaml.sortBy = defaultSettings.sortBy ?? 'name';
+		yaml.sortByAsc = defaultSettings.sortByAsc ?? false;
+	}
+
+	const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+	files.sort((a, b) => {
+		if (a instanceof TFolder && !(b instanceof TFolder)) {
+			return -1;
+		}
+		if (!(a instanceof TFolder) && b instanceof TFolder) {
+			return 1;
+		}
+
+		if (a instanceof TFolder && b instanceof TFolder) {
+			return yaml.sortByAsc
+				? collator.compare(a.name, b.name)
+				: collator.compare(b.name, a.name);
+		}
+
+		if (a instanceof TFile && b instanceof TFile) {
+			if (yaml.sortBy === 'created') {
+				return yaml.sortByAsc ? a.stat.ctime - b.stat.ctime : b.stat.ctime - a.stat.ctime;
+			} else if (yaml.sortBy === 'modified') {
+				return yaml.sortByAsc ? a.stat.mtime - b.stat.mtime : b.stat.mtime - a.stat.mtime;
+			} else if (yaml.sortBy === 'name') {
+				return yaml.sortByAsc
+					? collator.compare(a.basename, b.basename)
+					: collator.compare(b.basename, a.basename);
+			}
+		}
+
+		return 0;
+	});
+
+	return files;
+}
+
+export async function filterFiles(files: TAbstractFile[], plugin: FolderOverviewPlugin | FolderNotesPlugin, sourceFolderPath: string, depth: number, pathBlacklist: string[], yaml: defaultOverviewSettings, sourceFile: TFile): Promise<TAbstractFile[]> {
+	const filteredFiles = await Promise.all(files.map(async (file) => {
+		const folderPath = getFolderPathFromString(file.path);
+		const dontShowFolderNote = pathBlacklist.includes(file.path);
+		const isSubfolder = sourceFolderPath === '/' || folderPath.startsWith(sourceFolderPath);
+		const isSourceFile = file.path === sourceFile.path;
+		let isExcludedFromOverview = false;
+
+		if (plugin instanceof FolderNotesPlugin) {
+			isExcludedFromOverview = (getExcludedFolder(plugin, file.path, true))?.excludeFromFolderOverview ?? false;
+		}
+
+		if ((dontShowFolderNote && !yaml.showFolderNotes) || !isSubfolder || isSourceFile || isExcludedFromOverview) {
+			return null;
+		}
+
+		const fileDepth = file.path.split('/').length - (sourceFolderPath === '/' ? 0 : sourceFolderPath.split('/').length);
+		return fileDepth <= depth ? file : null;
+	}));
+
+	return filteredFiles.filter((file) => file !== null) as TAbstractFile[];
+}
+
+export function updateLinkList(files: TAbstractFile[] = [], plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, pathBlacklist: string[], sourceFile: TFile) {
+	buildLinkList(files, plugin, yaml, pathBlacklist, sourceFile).then((fileLinks: string[]) => {
+		plugin.app.vault.process(sourceFile, (text) => {
+			const lines = text.split('\n');
+			const linkListStart = `<span class="fv-link-list-start" id="${yaml.id}"></span>`;
+			const linkListEnd = `<span class="fv-link-list-end" id="${yaml.id}"></span>`;
+
+			const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
+			const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
+
+			const linkListExists = startIdx !== -1 && endIdx !== -1;
+			const isInvalidLinkList = endIdx < startIdx;
+			if (!linkListExists || isInvalidLinkList) {
+				return text;
+			}
+
+			lines.splice(startIdx, endIdx - startIdx + 1);
+
+			// Add the file/folder links into the text
+			const newBlock = [
+				linkListStart,
+				...fileLinks,
+				linkListEnd,
+			];
+			lines.splice(startIdx, 0, ...newBlock);
+
+			return lines.join('\n');
+		});
+	});
+}
+
+async function buildLinkList(items: TAbstractFile[], plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, pathBlacklist: string[], sourceFile: TFile, indent = 0): Promise<string[]> {
+	const result: string[] = [];
+	// Filter and sort items before building the link list
+	const filtered = (await filterFiles(
+		items,
+		plugin,
+		yaml.folderPath,
+		yaml.depth,
+		pathBlacklist,
+		yaml,
+		sourceFile
+	)).filter((file): file is TAbstractFile => file !== null);
+
+	const sorted = sortFiles(filtered, yaml, plugin);
+
+	for (const item of sorted) {
+		const indentStr = '\t'.repeat(indent);
+		if (item instanceof TFile) {
+			if (yaml.hideLinkList) {
+				result.push(`${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
+			} else {
+				result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
+			}
+		} else if (item instanceof TFolder) {
+			const isFirstLevelSub = item.path.split('/').length === yaml.folderPath.split('/').length + 1;
+			if (!yaml.showEmptyFolders && item.children.length === 0 && !yaml.onlyIncludeSubfolders) {
+				continue;
+			} else if (yaml.onlyIncludeSubfolders && !isFirstLevelSub && item.children.length === 0) {
+				continue;
+			}
+
+			let line = `${indentStr}- ${item.name}`;
+			if (yaml.hideLinkList) {
+				line += ' <span class="fv-link-list-item"></span>';
+			}
+
+			let folderNote: TFile | null | undefined = null;
+			if (plugin instanceof FolderNotesPlugin) {
+				folderNote = getFolderNote(plugin, item.path);
+			}
+
+			if (folderNote) {
+				line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
+				if (yaml.hideLinkList) {
+					line += ' <span class="fv-link-list-item"></span>';
+				}
+			}
+
+			result.push(line);
+			const children = item.children.filter(
+				(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
+			);
+			if (children.length > 0) {
+				const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1);
+				result.push(...childLinks);
+			}
+		}
+	}
+	return result;
+}
+
+export function getAllFiles(files: TAbstractFile[], sourceFolderPath: string, depth: number) {
+	const allFiles: TAbstractFile[] = [];
+
+	const getDepth = (filePath: string) => {
+		return filePath.split('/').length - sourceFolderPath.split('/').length;
+	};
+
+	files.forEach((file) => {
+		const fileDepth = getDepth(file.path);
+
+		if (file instanceof TFolder) {
+			if (fileDepth < depth) {
+				allFiles.push(...getAllFiles(file.children, sourceFolderPath, depth));
+			}
+		} else {
+			allFiles.push(file);
+		}
+	});
+
+	return allFiles;
+}
+

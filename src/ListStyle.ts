@@ -1,11 +1,11 @@
 import { MarkdownPostProcessorContext, TFolder, TFile } from 'obsidian';
 import { extractFolderName, getFolderNote } from '../../functions/folderNoteFunctions';
-import { FolderOverview, overviewSettings } from './FolderOverview';
+import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from './FolderOverview';
 import { getFolderPathFromString } from '../../functions/utils';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 
-export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: overviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
+export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: defaultOverviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
 	const overviewList = folderOverview.listEl;
 	overviewList?.empty();
 	let tFolder = plugin.app.vault.getAbstractFileByPath(yaml.folderPath);
@@ -23,10 +23,10 @@ export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNo
 	if (!files) { return; }
 	const ul = folderOverview.listEl;
 	const sourceFolderPath = tFolder.path;
-	files = await folderOverview.filterFiles(files, plugin, sourceFolderPath, yaml.depth, folderOverview.pathBlacklist);
+	files = await filterFiles(files, plugin, sourceFolderPath, yaml.depth, folderOverview.pathBlacklist, yaml, folderOverview.sourceFile);
 
-	const folders = folderOverview.sortFiles(files.filter((f) => f instanceof TFolder));
-	files = folderOverview.sortFiles(files.filter((f) => f instanceof TFile));
+	const folders = sortFiles(files.filter((f) => f instanceof TFolder), folderOverview.yaml, plugin);
+	files = sortFiles(files.filter((f) => f instanceof TFile), folderOverview.yaml, plugin);
 	folders.forEach(async (file) => {
 		if (file instanceof TFolder) {
 			if (yaml.includeTypes.includes('folder')) {
@@ -107,16 +107,24 @@ export async function addFolderList(plugin: FolderOverviewPlugin | FolderNotesPl
 }
 
 async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTMLLIElement | HTMLUListElement, folder: TFolder,
-	depth: number, sourceFolderPath: string, ctx: MarkdownPostProcessorContext, yaml: overviewSettings,
+	depth: number, sourceFolderPath: string, ctx: MarkdownPostProcessorContext, yaml: defaultOverviewSettings,
 	pathBlacklist: string[], includeTypes: string[], disableFileTag: boolean, folderOverview: FolderOverview) {
 	if (sourceFolderPath === '') {
 		depth--;
 	}
 
-	const allFiles = await folderOverview.filterFiles(folder.children, plugin, sourceFolderPath, depth, pathBlacklist);
-	const files = folderOverview.sortFiles(allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null));
+	const allFiles = await filterFiles(folder.children, plugin, sourceFolderPath, depth, pathBlacklist, yaml, folderOverview.sourceFile);
+	const files = sortFiles(
+		allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null),
+		yaml,
+		plugin
+	);
 
-	const folders = folderOverview.sortFiles(allFiles.filter((file): file is TFile => (file instanceof TFolder) && file !== null));
+	const folders = sortFiles(
+		allFiles.filter((file): file is TFolder => (file instanceof TFolder) && file !== null),
+		yaml,
+		plugin
+	);
 	const ul = list.createEl('ul', { cls: 'folder-overview-list' });
 
 	folders.forEach(async (file) => {

@@ -1,22 +1,26 @@
-import { Plugin, WorkspaceLeaf, Notice, MarkdownPostProcessorContext, parseYaml } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice, MarkdownPostProcessorContext, parseYaml, debounce } from 'obsidian';
 import { FolderOverviewView, FOLDER_OVERVIEW_VIEW } from './view';
-import { overviewSettings, FolderOverview } from './FolderOverview';
-import { DEFAULT_SETTINGS, SettingsTab } from './settings';
+import { FolderOverview, defaultOverviewSettings } from './FolderOverview';
+import { DEFAULT_SETTINGS, SettingsTab, defaultSettings } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
 import FolderNotesPlugin from '../../main';
 import { FrontMatterTitlePluginHandler } from './FmtpHandler';
+import { updateAllOverviews } from './utils/functions';
+import { FvIndexDB } from './utils/IndexDB';
 
 export default class FolderOverviewPlugin extends Plugin {
-	settings: overviewSettings;
+	settings: defaultSettings;
 	settingsTab: SettingsTab;
 	fmtpHandler: FrontMatterTitlePluginHandler;
+	fvIndexDB: FvIndexDB;
 	async onload() {
 		await this.loadSettings();
 		this.settingsTab = new SettingsTab(this);
 		this.addSettingTab(this.settingsTab);
 		this.settingsTab.display();
 		registerOverviewCommands(this);
+		this.fvIndexDB = new FvIndexDB(this);
 
 		this.app.workspace.onLayoutReady(async () => {
 			this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
@@ -26,12 +30,27 @@ export default class FolderOverviewPlugin extends Plugin {
 			if (this.app.plugins.getPlugin('obsidian-front-matter-title-plugin')) {
 				this.fmtpHandler = new FrontMatterTitlePluginHandler(this);
 			}
+
+			if (this.settings.globalSettings.autoUpdateLinks) {
+				this.fvIndexDB.init(false);
+			}
 		});
+
+		this.app.vault.on('rename', () => this.handleVaultChange());
+		this.app.vault.on('create', () => this.handleVaultChange());
+		this.app.vault.on('delete', () => this.handleVaultChange());
 
 		this.registerMarkdownCodeBlockProcessor('folder-overview', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
 			this.handleOverviewBlock(source, el, ctx);
 		});
 		console.log('loading Folder Overview plugin');
+	}
+
+	handleVaultChange() {
+		if (!this.settings.globalSettings.autoUpdateLinks) return;
+		debounce(() => {
+			updateAllOverviews(this);
+		}, 2000, true)();
 	}
 
 	async handleOverviewBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
@@ -42,7 +61,7 @@ export default class FolderOverviewPlugin extends Plugin {
 					e.stopImmediatePropagation();
 					e.preventDefault();
 					e.stopPropagation();
-					new FolderOverviewSettings(this.app, this, parseYaml(source), ctx, el, this.settings).open();
+					new FolderOverviewSettings(this.app, this, parseYaml(source), ctx, el, this.settings.defaultOverviewSettings).open();
 				}, { capture: true });
 			}
 		});
@@ -54,7 +73,7 @@ export default class FolderOverviewPlugin extends Plugin {
 
 		try {
 			this.app.workspace.onLayoutReady(async () => {
-				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings);
+				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings.defaultOverviewSettings);
 				await folderOverview.create(this, parseYaml(source), el, ctx);
 				this.updateOverviewView(this);
 			});
@@ -71,7 +90,12 @@ export default class FolderOverviewPlugin extends Plugin {
 	async loadSettings() {
 		const data = await this.loadData();
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-		if(data?.firstTimeInsertOverview === undefined) {
+
+		if (!this.settings.defaultOverviewSettings) {
+			this.settings.defaultOverviewSettings = { ...this.settings } as any;
+		}
+
+		if (data?.firstTimeInsertOverview === undefined) {
 			// @ts-ignore
 			this.settings.firstTimeInsertOverview = true;
 		}
@@ -102,7 +126,7 @@ export default class FolderOverviewPlugin extends Plugin {
 	updateViewDropdown = updateViewDropdown;
 }
 
-export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNotesPlugin, newYaml?: overviewSettings) {
+export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNotesPlugin, newYaml?: defaultOverviewSettings) {
 	const { workspace } = plugin.app;
 	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 	if (!leaf) return;

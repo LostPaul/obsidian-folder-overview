@@ -19,28 +19,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 			const lineText = editor.getLine(line);
 			if (lineText.trim() === '' || lineText.trim() === '>') {
 				if (!checking) {
-					const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
-					json.id = crypto.randomUUID();
-					const yaml = stringifyYaml(json);
-					let overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
-					if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
-						overviewBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
-					}
-
-					if (lineText.trim() === '') {
-						editor.replaceSelection(overviewBlock);
-					} else if (lineText.trim() === '>') {
-						// add > to the beginning of each line
-						const lines = yaml.split('\n');
-						const newLines = lines.map((line) => {
-							return `> ${line}`;
-						});
-						let quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
-						if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
-							quotedBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
-						}
-						editor.replaceSelection(quotedBlock);
-					}
+					insertOverview(editor, plugin);
 				}
 				return true;
 			}
@@ -68,30 +47,43 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 							frag.appendChild(link);
 							new Notice(frag);
 						}
-						const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings : plugin.settings.defaultOverview);
-						json.id = crypto.randomUUID();
-						const yaml = stringifyYaml(json);
-						let overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
-						if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
-							overviewBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
-						}
-
-						if (lineText.trim() === '') {
-							editor.replaceSelection(overviewBlock);
-						} else if (lineText.trim() === '>') {
-							// add > to the beginning of each line
-							const lines = yaml.split('\n');
-							const newLines = lines.map((line) => {
-								return `> ${line}`;
-							});
-							let quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
-							if (plugin instanceof FolderOverviewPlugin && plugin.settings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
-								quotedBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
-							}
-							editor.replaceSelection(quotedBlock);
-						}
+						insertOverview(editor, plugin);
 					});
 			});
 		}
 	}));
+}
+
+function insertOverview(editor: Editor, plugin: FolderOverviewPlugin | FolderNotesPlugin) {
+	const line = editor.getCursor().line;
+	const lineText = editor.getLine(line);
+	const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings.defaultOverviewSettings : plugin.settings.defaultOverview);
+	json.id = crypto.randomUUID();
+	const yaml = stringifyYaml(json);
+	let overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
+	if (plugin instanceof FolderOverviewPlugin && plugin.settings.defaultOverviewSettings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
+		overviewBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+	}
+
+	if (lineText.trim() === '') {
+		editor.replaceSelection(overviewBlock);
+	} else if (lineText.trim() === '>') {
+		// add > to the beginning of each line
+		const lines = yaml.split('\n');
+		const newLines = lines.map((line) => {
+			return `> ${line}`;
+		});
+		let quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
+		if (plugin instanceof FolderOverviewPlugin && plugin.settings.defaultOverviewSettings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
+			quotedBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+		}
+		editor.replaceSelection(quotedBlock);
+	}
+
+	if (plugin.fvIndexDB.active) {
+		const activeFile = plugin.app.workspace.getActiveFile();
+		if (activeFile) {
+			plugin.fvIndexDB.addNote(activeFile);
+		}
+	}
 }

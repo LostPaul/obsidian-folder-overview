@@ -3,7 +3,7 @@ import { getFolderNote } from '../../functions/folderNoteFunctions';
 import { getExcludedFolder } from '../../ExcludeFolders/functions/folderFunctions';
 import { getFolderPathFromString } from '../../functions/utils';
 import { getFileExplorerElement } from '../../functions/styleFunctions';
-import { FolderOverview, overviewSettings } from './FolderOverview';
+import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from './FolderOverview';
 import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 
@@ -12,11 +12,11 @@ export class FileExplorerOverview {
 	folderOverview: FolderOverview;
 	pathBlacklist: string[];
 	source: string;
-	yaml: overviewSettings;
+	yaml: defaultOverviewSettings;
 	root: HTMLElement;
 
 	eventListeners: (() => void)[] = [];
-	constructor(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: overviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
+	constructor(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: defaultOverviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
 		this.plugin = plugin;
 		this.folderOverview = folderOverview;
 		this.pathBlacklist = pathBlacklist;
@@ -140,8 +140,20 @@ export class FileExplorerOverview {
 
 	async addFiles(files: TAbstractFile[], childrenElement: HTMLElement, folderOverview: FolderOverview, sourceFolderPath: string) {
 		const plugin = folderOverview.plugin;
-		const allFiles = await folderOverview.filterFiles(files, plugin, sourceFolderPath, folderOverview.yaml.depth, folderOverview.pathBlacklist);
-		const sortedFiles = folderOverview.sortFiles((allFiles ?? []).filter((file): file is TAbstractFile => file !== null));
+		const allFiles = await filterFiles(
+			files,
+			plugin,
+			sourceFolderPath,
+			folderOverview.yaml.depth,
+			folderOverview.pathBlacklist,
+			folderOverview.yaml,
+			folderOverview.sourceFile
+		);
+		const sortedFiles = sortFiles(
+			(allFiles ?? []).filter((file): file is TAbstractFile => file !== null),
+			folderOverview.yaml,
+			folderOverview.plugin
+		);
 
 		const folders = sortedFiles.filter((child) => child instanceof TFolder);
 		const otherFiles = sortedFiles.filter((child) => child instanceof TFile);
@@ -158,7 +170,7 @@ export class FileExplorerOverview {
 
 	}
 
-	async handleCollapseClick(el: HTMLElement, plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: overviewSettings, pathBlacklist: string[], sourceFolderPath: string, folderOverview: FolderOverview, folder?: TFolder | undefined | null | TAbstractFile) {
+	async handleCollapseClick(el: HTMLElement, plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, pathBlacklist: string[], sourceFolderPath: string, folderOverview: FolderOverview, folder?: TFolder | undefined | null | TAbstractFile) {
 		el.classList.toggle('is-collapsed');
 		if (el.classList.contains('is-collapsed')) {
 			if (!(folder instanceof TFolder)) return;
@@ -170,8 +182,8 @@ export class FileExplorerOverview {
 			const folderElement = el.parentElement?.parentElement;
 			if (!folderElement) return;
 			const childrenElement = folderElement.createDiv({ cls: 'tree-item-children nav-folder-children' });
-			const files = folderOverview.sortFiles(folder.children);
-			const filteredFiles = (await folderOverview.filterFiles(files, plugin, folder.path, yaml.depth || 1, pathBlacklist) ?? []).filter((file): file is TAbstractFile => file !== null);
+			const files = sortFiles(folder.children, yaml, plugin);
+			const filteredFiles = (await filterFiles(files, plugin, folder.path, yaml.depth || 1, pathBlacklist, yaml, folderOverview.sourceFile) ?? []).filter((file): file is TAbstractFile => file !== null);
 			await this.addFiles(filteredFiles, childrenElement, folderOverview, sourceFolderPath);
 		}
 	}
