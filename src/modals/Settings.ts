@@ -42,6 +42,7 @@ export class FolderOverviewSettings extends Modal {
 				hideFolderOverview: yaml?.hideFolderOverview ?? defaultSettings.hideFolderOverview,
 				useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
 				fmtpIntegration: yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
+				titleSize: yaml?.titleSize ?? defaultSettings.titleSize,
 			};
 		}
 		if (ctx) {

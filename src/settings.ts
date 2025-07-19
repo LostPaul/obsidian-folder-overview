@@ -34,6 +34,7 @@ export const OVERVIEW_SETTINGS: defaultOverviewSettings = {
 	hideFolderOverview: false,
 	useActualLinks: false,
 	fmtpIntegration: false,
+	titleSize: 1,
 };
 
 export const GLOBAL_SETTINGS: globalSettings = {
@@ -183,6 +184,23 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value) => {
 						yaml.title = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
+					})
+			);
+	});
+
+	createOrReplaceSetting(contentEl, 'title-size', changedSection, (settingEl) => {
+		new Setting(settingEl)
+			.setName('Title size')
+			.setDesc('Choose the size of the title above the folder overview')
+			.addSlider((slider) =>
+				slider
+					.setValue(yaml.titleSize)
+					.setLimits(1, 6, 1)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						yaml.titleSize = value;
+						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
+						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
 					})
 			);
 	});
@@ -506,6 +524,7 @@ async function updateSettings(contentEl: HTMLElement, yaml: defaultOverviewSetti
 
 	toggleSections(contentEl, {
 		'setting-title-container-fn': yaml.showTitle,
+		'setting-title-size': yaml.showTitle,
 		'setting-store-collapse-condition': yaml.style === 'explorer',
 		'setting-file-tag': showDisableFileTag,
 		'setting-show-empty-folders': yaml.style === 'list',

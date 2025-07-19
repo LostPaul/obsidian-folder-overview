@@ -35,6 +35,7 @@ export type defaultOverviewSettings = {
 	hideFolderOverview: boolean;
 	useActualLinks: boolean;
 	fmtpIntegration: boolean;
+	titleSize: number;
 };
 
 export class FolderOverview {
@@ -133,6 +134,7 @@ export class FolderOverview {
 			hideFolderOverview: yaml?.hideFolderOverview ?? defaultSettings.hideFolderOverview,
 			useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
 			fmtpIntegration: yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
+			titleSize: yaml?.titleSize ?? defaultSettings.titleSize,
 		};
 
 		const customChild = new CustomMarkdownRenderChild(el, this);
@@ -191,7 +193,8 @@ export class FolderOverview {
 		const root = el.createEl('div', { cls: 'folder-overview' });
 		this.root = root;
 
-		const titleEl = root.createEl('h1', { cls: 'folder-overview-title' });
+		const headingTag = `h${this.yaml.titleSize}` as keyof HTMLElementTagNameMap;
+		const titleEl = root.createEl(headingTag, { cls: 'folder-overview-title' });
 
 		const ul = root.createEl('ul', { cls: 'folder-overview-list' });
 		this.listEl = ul;
