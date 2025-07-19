@@ -1,11 +1,11 @@
 import { MarkdownPostProcessorContext, TAbstractFile, TFolder, TFile, setIcon } from 'obsidian';
-import { getFolderNote } from '../../functions/folderNoteFunctions';
-import { getExcludedFolder } from '../../ExcludeFolders/functions/folderFunctions';
-import { getFolderPathFromString } from '../../functions/utils';
-import { getFileExplorerElement } from '../../functions/styleFunctions';
-import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from './FolderOverview';
-import FolderOverviewPlugin from './main';
-import FolderNotesPlugin from '../../main';
+import { getFolderNote } from '../../../functions/folderNoteFunctions';
+import { getExcludedFolder } from '../../../ExcludeFolders/functions/folderFunctions';
+import { getFolderPathFromString } from '../../../functions/utils';
+import { getFileExplorerElement } from '../../../functions/styleFunctions';
+import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from '../FolderOverview';
+import FolderOverviewPlugin from '../main';
+import FolderNotesPlugin from '../../../main';
 
 export class FileExplorerOverview {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
@@ -319,23 +319,6 @@ export class FileExplorerOverview {
 		const pathBlacklist = folderOverview.pathBlacklist;
 
 		if (pathBlacklist.includes(child.path) && !yaml.showFolderNotes) { return; }
-
-		const extension = child.extension.toLowerCase() === 'md' ? 'markdown' : child.extension.toLowerCase();
-		const includeTypes = yaml.includeTypes;
-
-		if (includeTypes.length > 0 && !includeTypes.includes('all')) {
-			if ((extension === 'md' || extension === 'markdown') && !includeTypes.includes('markdown')) return;
-			if (extension === 'canvas' && !includeTypes.includes('canvas')) return;
-			if (extension === 'pdf' && !includeTypes.includes('pdf')) return;
-			const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
-			if (imageTypes.includes(extension) && !includeTypes.includes('image')) return;
-			const videoTypes = ['mp4', 'webm', 'ogv', 'mov', 'mkv'];
-			if (videoTypes.includes(extension) && !includeTypes.includes('video')) return;
-			const audioTypes = ['mp3', 'wav', 'm4a', '3gp', 'flac', 'ogg', 'oga', 'opus'];
-			if (audioTypes.includes(extension) && includeTypes.includes('audio')) return;
-			const allTypes = ['markdown', 'md', 'canvas', 'pdf', ...imageTypes, ...videoTypes, ...audioTypes];
-			if (!allTypes.includes(extension) && !includeTypes.includes('other')) return;
-		}
 
 		folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
 

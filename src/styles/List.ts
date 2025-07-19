@@ -1,9 +1,9 @@
 import { MarkdownPostProcessorContext, TFolder, TFile } from 'obsidian';
-import { extractFolderName, getFolderNote } from '../../functions/folderNoteFunctions';
-import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from './FolderOverview';
-import { getFolderPathFromString } from '../../functions/utils';
-import FolderOverviewPlugin from './main';
-import FolderNotesPlugin from '../../main';
+import { extractFolderName, getFolderNote } from '../../../functions/folderNoteFunctions';
+import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from '../FolderOverview';
+import { getFolderPathFromString } from '../../../functions/utils';
+import FolderOverviewPlugin from '../main';
+import FolderNotesPlugin from '../../../main';
 
 export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: defaultOverviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
 	const overviewList = folderOverview.listEl;
@@ -151,20 +151,6 @@ async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin
 }
 
 async function addFileList(plugin: FolderOverviewPlugin | FolderNotesPlugin, list: HTMLUListElement | HTMLLIElement, pathBlacklist: string[], file: TFile, includeTypes: string[], disableFileTag: boolean, folderOverview: FolderOverview) {
-	if (includeTypes.length > 0 && !includeTypes.includes('all')) {
-		if (file.extension === 'md' && !includeTypes.includes('markdown')) return;
-		if (file.extension === 'canvas' && !includeTypes.includes('canvas')) return;
-		if (file.extension === 'pdf' && !includeTypes.includes('pdf')) return;
-		const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
-		if (imageTypes.includes(file.extension) && !includeTypes.includes('image')) return;
-		const videoTypes = ['mp4', 'webm', 'ogv', 'mov', 'mkv'];
-		if (videoTypes.includes(file.extension) && !includeTypes.includes('video')) return;
-		const audioTypes = ['mp3', 'wav', 'm4a', '3gp', 'flac', 'ogg', 'oga', 'opus'];
-		if (audioTypes.includes(file.extension) && includeTypes.includes('audio')) return;
-		const allTypes = ['md', 'canvas', 'pdf', ...imageTypes, ...videoTypes, ...audioTypes];
-		if (!allTypes.includes(file.extension) && !includeTypes.includes('other')) return;
-	}
-
 	if (!folderOverview.yaml.showFolderNotes) {
 		if (pathBlacklist.includes(file.path)) return;
 		if (plugin instanceof FolderNotesPlugin && extractFolderName(plugin.settings.folderNoteName, file.basename) === file.parent?.name) {

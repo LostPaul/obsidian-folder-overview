@@ -2,8 +2,8 @@ import { MarkdownPostProcessorContext, parseYaml, TAbstractFile, TFolder, TFile,
 import { FolderOverviewSettings } from './modals/Settings';
 import { getExcludedFolder } from '../../ExcludeFolders/functions/folderFunctions';
 import { getFolderPathFromString } from '../../functions/utils';
-import { FileExplorerOverview } from './FileExplorer';
-import { renderListOverview } from './ListStyle';
+import { FileExplorerOverview } from './styles/FileExplorer';
+import { renderListOverview } from './styles/List';
 import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import FolderOverviewPlugin from './main';
@@ -621,6 +621,23 @@ export async function filterFiles(files: TAbstractFile[], plugin: FolderOverview
 		const isSubfolder = sourceFolderPath === '/' || folderPath.startsWith(sourceFolderPath);
 		const isSourceFile = file.path === sourceFile.path;
 		let isExcludedFromOverview = false;
+		const isFile = file instanceof TFile;
+		const includeTypes = yaml.includeTypes || [];
+		const extension = isFile ? file.extension.toLowerCase() : '';
+
+		if (isFile && includeTypes.length > 0 && !includeTypes.includes('all')) {
+			if ((extension === 'md' || extension === 'markdown') && !includeTypes.includes('markdown')) return null;
+			if (extension === 'canvas' && !includeTypes.includes('canvas')) return null;
+			if (extension === 'pdf' && !includeTypes.includes('pdf')) return null;
+			const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+			if (imageTypes.includes(extension) && !includeTypes.includes('image')) return null;
+			const videoTypes = ['mp4', 'webm', 'ogv', 'mov', 'mkv'];
+			if (videoTypes.includes(extension) && !includeTypes.includes('video')) return null;
+			const audioTypes = ['mp3', 'wav', 'm4a', '3gp', 'flac', 'ogg', 'oga', 'opus'];
+			if (audioTypes.includes(extension) && includeTypes.includes('audio')) return null;
+			const allTypes = ['markdown', 'md', 'canvas', 'pdf', ...imageTypes, ...videoTypes, ...audioTypes];
+			if (!allTypes.includes(extension) && !includeTypes.includes('other')) return null;
+		}
 
 		if (plugin instanceof FolderNotesPlugin) {
 			isExcludedFromOverview = (getExcludedFolder(plugin, file.path, true))?.excludeFromFolderOverview ?? false;
@@ -679,15 +696,6 @@ async function buildLinkList(
 ): Promise<string[]> {
 	const result: string[] = [];
 
-	for (const item of items) {
-		if (item instanceof TFolder) {
-			if (visited.has(item.path)) {
-				continue;
-			}
-			visited.add(item.path);
-		}
-	}
-
 	const filtered = (await filterFiles(
 		items,
 		plugin,
@@ -702,6 +710,7 @@ async function buildLinkList(
 
 	for (const item of sorted) {
 		const indentStr = '\t'.repeat(indent);
+
 		if (item instanceof TFile) {
 			if (yaml.hideLinkList) {
 				result.push(`${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
@@ -709,41 +718,28 @@ async function buildLinkList(
 				result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
 			}
 		} else if (item instanceof TFolder) {
-			const isFirstLevelSub = item.path.split('/').length === yaml.folderPath.split('/').length + 1;
-			if (!yaml.showEmptyFolders && item.children.length === 0 && !yaml.onlyIncludeSubfolders) {
-				continue;
-			} else if (yaml.onlyIncludeSubfolders && !isFirstLevelSub && item.children.length === 0) {
-				continue;
-			}
+			if (visited.has(item.path)) continue;
+			visited.add(item.path);
 
 			let line = `${indentStr}- ${item.name}`;
-			if (yaml.hideLinkList) {
-				line += ' <span class="fv-link-list-item"></span>';
-			}
-
 			let folderNote: TFile | null | undefined = null;
 			if (plugin instanceof FolderNotesPlugin) {
 				folderNote = getFolderNote(plugin, item.path);
 			}
-
 			if (folderNote) {
 				line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
-				if (yaml.hideLinkList) {
-					line += ' <span class="fv-link-list-item"></span>';
-				}
 			}
-
+			if (yaml.hideLinkList) {
+				line += ' <span class="fv-link-list-item"></span>';
+			}
 			result.push(line);
 
-			if (!visited.has(item.path)) {
-				visited.add(item.path);
-				const children = item.children.filter(
-					(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
-				);
-				if (children.length > 0) {
-					const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1, visited);
-					result.push(...childLinks);
-				}
+			const children = item.children.filter(
+				(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
+			);
+			if (children.length > 0) {
+				const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1, visited);
+				result.push(...childLinks);
 			}
 		}
 	}

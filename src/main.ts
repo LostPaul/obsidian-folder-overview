@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, SettingsTab, defaultSettings } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
 import FolderNotesPlugin from '../../main';
-import { FrontMatterTitlePluginHandler } from './FmtpHandler';
+import { FrontMatterTitlePluginHandler } from './utils/FmtpHandler';
 import { updateAllOverviews } from './utils/functions';
 import { FvIndexDB } from './utils/IndexDB';
 
