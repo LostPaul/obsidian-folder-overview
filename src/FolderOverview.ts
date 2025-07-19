@@ -668,9 +668,26 @@ export function updateLinkList(files: TAbstractFile[] = [], plugin: FolderOvervi
 	});
 }
 
-async function buildLinkList(items: TAbstractFile[], plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, pathBlacklist: string[], sourceFile: TFile, indent = 0): Promise<string[]> {
+async function buildLinkList(
+	items: TAbstractFile[],
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+	yaml: defaultOverviewSettings,
+	pathBlacklist: string[],
+	sourceFile: TFile,
+	indent = 0,
+	visited = new Set<string>()
+): Promise<string[]> {
 	const result: string[] = [];
-	// Filter and sort items before building the link list
+
+	for (const item of items) {
+		if (item instanceof TFolder) {
+			if (visited.has(item.path)) {
+				continue;
+			}
+			visited.add(item.path);
+		}
+	}
+
 	const filtered = (await filterFiles(
 		items,
 		plugin,
@@ -717,12 +734,16 @@ async function buildLinkList(items: TAbstractFile[], plugin: FolderOverviewPlugi
 			}
 
 			result.push(line);
-			const children = item.children.filter(
-				(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
-			);
-			if (children.length > 0) {
-				const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1);
-				result.push(...childLinks);
+
+			if (!visited.has(item.path)) {
+				visited.add(item.path);
+				const children = item.children.filter(
+					(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
+				);
+				if (children.length > 0) {
+					const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1, visited);
+					result.push(...childLinks);
+				}
 			}
 		}
 	}
