@@ -191,7 +191,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 	createOrReplaceSetting(contentEl, 'title-size', changedSection, (settingEl) => {
 		new Setting(settingEl)
 			.setName('Title size')
-			.setDesc('Choose the size of the title above the folder overview')
+			.setDesc('The larger the number, the smaller the title will be displayed.')
 			.addSlider((slider) =>
 				slider
 					.setValue(yaml.titleSize)
