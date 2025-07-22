@@ -54,6 +54,7 @@ export class FolderOverview {
 	listEl: HTMLUListElement;
 	defaultSettings: defaultOverviewSettings;
 	sourceFile: TFile;
+	counter = 0;
 
 	eventListeners: (() => void)[] = [];
 	constructor(plugin: FolderNotesPlugin | FolderOverviewPlugin, ctx: MarkdownPostProcessorContext, source: string, el: HTMLElement, defaultSettings: defaultOverviewSettings) {
@@ -265,6 +266,7 @@ export class FolderOverview {
 		}
 
 		if (files.length === 0) {
+			updateLinkList(files, this.plugin, this.yaml, this.pathBlacklist, this.sourceFile);
 			return this.addEditButton(root);
 		}
 
@@ -691,11 +693,9 @@ async function buildLinkList(
 	yaml: defaultOverviewSettings,
 	pathBlacklist: string[],
 	sourceFile: TFile,
-	indent = 0,
-	visited = new Set<string>()
+	indent = 0
 ): Promise<string[]> {
 	const result: string[] = [];
-
 	const filtered = (await filterFiles(
 		items,
 		plugin,
@@ -718,17 +718,17 @@ async function buildLinkList(
 				result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
 			}
 		} else if (item instanceof TFolder) {
-			if (visited.has(item.path)) continue;
-			visited.add(item.path);
-
 			let line = `${indentStr}- ${item.name}`;
 			let folderNote: TFile | null | undefined = null;
+
 			if (plugin instanceof FolderNotesPlugin) {
 				folderNote = getFolderNote(plugin, item.path);
 			}
+
 			if (folderNote) {
 				line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
 			}
+
 			if (yaml.hideLinkList) {
 				line += ' <span class="fv-link-list-item"></span>';
 			}
@@ -738,7 +738,7 @@ async function buildLinkList(
 				(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
 			);
 			if (children.length > 0) {
-				const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1, visited);
+				const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1);
 				result.push(...childLinks);
 			}
 		}
