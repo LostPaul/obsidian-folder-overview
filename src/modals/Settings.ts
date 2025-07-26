@@ -43,6 +43,7 @@ export class FolderOverviewSettings extends Modal {
 				useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
 				fmtpIntegration: yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
 				titleSize: yaml?.titleSize ?? defaultSettings.titleSize,
+				isInCallout: yaml?.isInCallout ?? false,
 			};
 		}
 		if (ctx) {
