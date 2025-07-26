@@ -4631,7 +4631,8 @@ var DEFAULT_SETTINGS = {
     hideFolderOverview: false,
     useActualLinks: false,
     fmtpIntegration: false,
-    titleSize: 1
+    titleSize: 1,
+    isInCallout: false
   },
   useSubmenus: true,
   syncMove: true,
@@ -6775,7 +6776,8 @@ var OVERVIEW_SETTINGS = {
   hideFolderOverview: false,
   useActualLinks: false,
   fmtpIntegration: false,
-  titleSize: 1
+  titleSize: 1,
+  isInCallout: false
 };
 var GLOBAL_SETTINGS = {
   autoUpdateLinks: false
@@ -7093,7 +7095,7 @@ async function updateSettings(contentEl, yaml, plugin, addLinkList, defaultSetti
     await updateYaml(plugin, ctx, el, yaml, addLinkList);
   }
   if (file) {
-    await updateYamlById(plugin, yaml.id, file, yaml, addLinkList);
+    await updateYamlById(plugin, yaml.id, file, yaml, addLinkList, yaml.isInCallout);
   }
 }
 function refresh(contentEl, yaml, plugin, defaultSettings2, display, el, ctx, file, settingsTab, modal, changedSection) {
@@ -7118,7 +7120,7 @@ function toggleSections(contentEl, sections) {
 // src/obsidian-folder-overview/src/modals/Settings.ts
 var FolderOverviewSettings = class extends import_obsidian45.Modal {
   constructor(app2, plugin, yaml, ctx, el, defaultSettings2) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
     super(app2);
     this.plugin = plugin;
     this.app = app2;
@@ -7149,7 +7151,8 @@ var FolderOverviewSettings = class extends import_obsidian45.Modal {
         hideFolderOverview: (_s = yaml == null ? void 0 : yaml.hideFolderOverview) != null ? _s : defaultSettings2.hideFolderOverview,
         useActualLinks: (_t = yaml == null ? void 0 : yaml.useActualLinks) != null ? _t : defaultSettings2.useActualLinks,
         fmtpIntegration: (_u = yaml == null ? void 0 : yaml.fmtpIntegration) != null ? _u : defaultSettings2.fmtpIntegration,
-        titleSize: (_v = yaml == null ? void 0 : yaml.titleSize) != null ? _v : defaultSettings2.titleSize
+        titleSize: (_v = yaml == null ? void 0 : yaml.titleSize) != null ? _v : defaultSettings2.titleSize,
+        isInCallout: (_w = yaml == null ? void 0 : yaml.isInCallout) != null ? _w : false
       };
     }
     if (ctx) {
@@ -7761,7 +7764,7 @@ var FolderOverview = class {
     this.folders = [];
     this.counter = 0;
     this.eventListeners = [];
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
     this.plugin = plugin;
     this.emitter = new CustomEventEmitter2();
     let yaml = (0, import_obsidian49.parseYaml)(source);
@@ -7839,7 +7842,8 @@ var FolderOverview = class {
       hideFolderOverview: (_s = yaml == null ? void 0 : yaml.hideFolderOverview) != null ? _s : defaultSettings2.hideFolderOverview,
       useActualLinks: (_t = yaml == null ? void 0 : yaml.useActualLinks) != null ? _t : defaultSettings2.useActualLinks,
       fmtpIntegration: (_u = yaml == null ? void 0 : yaml.fmtpIntegration) != null ? _u : defaultSettings2.fmtpIntegration,
-      titleSize: (_v = yaml == null ? void 0 : yaml.titleSize) != null ? _v : defaultSettings2.titleSize
+      titleSize: (_v = yaml == null ? void 0 : yaml.titleSize) != null ? _v : defaultSettings2.titleSize,
+      isInCallout: (_w = yaml == null ? void 0 : yaml.isInCallout) != null ? _w : false
     };
     const customChild = new CustomMarkdownRenderChild(el, this);
     ctx.addChild(customChild);
@@ -7879,7 +7883,11 @@ var FolderOverview = class {
     el.empty();
     (_a = el.parentElement) == null ? void 0 : _a.classList.add("folder-overview-container");
     if (this.yaml.hideFolderOverview) {
-      (_b = el.parentElement) == null ? void 0 : _b.classList.add("fv-hide-overview");
+      if (this.yaml.isInCallout) {
+        el == null ? void 0 : el.classList.add("fv-hide-overview");
+      } else {
+        (_b = el.parentElement) == null ? void 0 : _b.classList.add("fv-hide-overview");
+      }
     }
     (_c = el.parentElement) == null ? void 0 : _c.addEventListener("contextmenu", (e) => {
       this.editOverviewContextMenu(e);
@@ -8000,8 +8008,8 @@ var FolderOverview = class {
   removeLinkList() {
     this.plugin.app.vault.process(this.sourceFile, (text) => {
       const lines = text.split("\n");
-      const linkListStart = `<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
-      const linkListEnd = `<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
+      const linkListStart = `${this.yaml.isInCallout ? "> " : ""}<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
+      const linkListEnd = `${this.yaml.isInCallout ? "> " : ""}<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
       const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
       const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
       const linkListExists = startIdx !== -1 && endIdx !== -1;
@@ -8109,7 +8117,7 @@ async function updateYaml(plugin, ctx, el, yaml, addLinkList) {
   if (!(file instanceof import_obsidian49.TFile))
     return;
   let stringYaml = (0, import_obsidian49.stringifyYaml)(yaml);
-  await plugin.app.vault.process(file, (text) => {
+  plugin.app.vault.process(file, (text) => {
     const info = ctx.getSectionInfo(el);
     if (stringYaml[stringYaml.length - 1] !== "\n") {
       stringYaml += "\n";
@@ -8121,20 +8129,24 @@ async function updateYaml(plugin, ctx, el, yaml, addLinkList) {
         return text;
       const lineLength = lineEnd - lineStart;
       const lines = text.split("\n");
-      let overviewBlock2 = `\`\`\`folder-overview
+      let overviewBlock = `\`\`\`folder-overview
 ${stringYaml}\`\`\``;
-      overviewBlock2 += addLinkList ? `
+      overviewBlock += addLinkList ? `
 <span class="fv-link-list-start" id="${yaml.id}"></span>
 <span class="fv-link-list-end" id="${yaml.id}"></span>` : "";
-      lines.splice(lineStart, lineLength + 1, overviewBlock2);
+      lines.splice(lineStart, lineLength + 1, overviewBlock);
       return lines.join("\n");
+    } else {
+      getOverviews(plugin, file).then((overviews) => {
+        overviews.forEach((overview) => {
+          var _a;
+          if (overview.id !== yaml.id)
+            return;
+          updateYamlById(plugin, yaml.id, file, yaml, addLinkList, (_a = overview.isInCallout) != null ? _a : false);
+        });
+      });
     }
-    let overviewBlock = `\`\`\`folder-overview
-${stringYaml}\`\`\``;
-    overviewBlock += addLinkList ? `
-<span class="fv-link-list-start" id="${yaml.id}"></span>
-<span class="fv-link-list-end" id="${yaml.id}"></span>` : "";
-    return overviewBlock;
+    return text;
   });
 }
 function getCodeBlockEndLine(text, startLine, count = 1) {
@@ -8159,7 +8171,18 @@ async function getOverviews(plugin, file) {
   const content = await plugin.app.vault.read(file);
   if (!content)
     return overviews;
-  const yamlBlocks = content.match(/```folder-overview\n([\s\S]*?)```/g);
+  const yamlBlocks = content.match(/^(?!>).*```folder-overview\n(?:^(?!>).*[\r\n]*)*?^```$/gm);
+  const calloutYamlBlocks = content.match(/^> ```folder-overview\n([\s\S]*?)```/gm);
+  if (calloutYamlBlocks) {
+    for (const block of calloutYamlBlocks) {
+      const cleanedBlock = block.replace(/^> ```folder-overview\n/, "").replace(/```$/, "").replace(/^> ?/gm, "");
+      const yaml = (0, import_obsidian49.parseYaml)(cleanedBlock);
+      if (yaml) {
+        yaml.isInCallout = true;
+        overviews.push(yaml);
+      }
+    }
+  }
   if (!yamlBlocks)
     return overviews;
   for (const block of yamlBlocks) {
@@ -8170,13 +8193,20 @@ async function getOverviews(plugin, file) {
   }
   return overviews;
 }
-async function updateYamlById(plugin, overviewId, file, newYaml, addLinkList) {
+async function updateYamlById(plugin, overviewId, file, newYaml, addLinkList, isCallout = false) {
   await plugin.app.vault.process(file, (text) => {
-    const yamlBlocks = text.match(/```folder-overview\n([\s\S]*?)```/g);
+    const yamlBlocks = isCallout ? text.match(/^> ```folder-overview\n([\s\S]*?)```/gm) : text.match(/^(?!>).*```folder-overview\n(?:^(?!>).*[\r\n]*)*?^```$/gm);
     if (!yamlBlocks)
       return text;
     for (const block of yamlBlocks) {
-      const yaml = (0, import_obsidian49.parseYaml)(block.replace("```folder-overview\n", "").replace("```", ""));
+      let cleanedBlock;
+      if (isCallout) {
+        cleanedBlock = block.replace("> ```folder-overview\n", "").replace("```", "");
+        cleanedBlock = cleanedBlock.replace(/^> ?/gm, "");
+      } else {
+        cleanedBlock = block.replace("```folder-overview\n", "").replace("```", "");
+      }
+      const yaml = (0, import_obsidian49.parseYaml)(cleanedBlock);
       if (!yaml)
         continue;
       if (yaml.id === overviewId) {
@@ -8184,12 +8214,24 @@ async function updateYamlById(plugin, overviewId, file, newYaml, addLinkList) {
         if (stringYaml[stringYaml.length - 1] !== "\n") {
           stringYaml += "\n";
         }
-        let newBlock = `\`\`\`folder-overview
-${stringYaml}\`\`\``;
-        if (addLinkList) {
+        let newBlock;
+        if (isCallout) {
+          newBlock = `> \`\`\`folder-overview
+${stringYaml.split("\n").map((line) => `> ${line}`).join("\n")}
+> \`\`\``;
+        } else {
+          newBlock = `\`\`\`folder-overview
+${stringYaml}
+\`\`\``;
+        }
+        if (addLinkList && !isCallout) {
           newBlock += `
 <span class="fv-link-list-start" id="${newYaml.id}"></span>
 <span class="fv-link-list-end" id="${newYaml.id}"></span>`;
+        } else if (addLinkList && isCallout) {
+          newBlock += `
+> <span class="fv-link-list-start" id="${newYaml.id}"></span>
+> <span class="fv-link-list-end" id="${newYaml.id}"></span>`;
         }
         text = text.replace(block, newBlock);
       }
@@ -8315,8 +8357,8 @@ function updateLinkList(files = [], plugin, yaml, pathBlacklist, sourceFile) {
   buildLinkList(files, plugin, yaml, pathBlacklist, sourceFile).then((fileLinks) => {
     plugin.app.vault.process(sourceFile, (text) => {
       const lines = text.split("\n");
-      const linkListStart = `<span class="fv-link-list-start" id="${yaml.id}"></span>`;
-      const linkListEnd = `<span class="fv-link-list-end" id="${yaml.id}"></span>`;
+      const linkListStart = `${yaml.isInCallout ? "> " : ""}<span class="fv-link-list-start" id="${yaml.id}"></span>`;
+      const linkListEnd = `${yaml.isInCallout ? "> " : ""}<span class="fv-link-list-end" id="${yaml.id}"></span>`;
       const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
       const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
       const linkListExists = startIdx !== -1 && endIdx !== -1;
@@ -8343,18 +8385,18 @@ async function buildLinkList(items, plugin, yaml, pathBlacklist, sourceFile, ind
     const indentStr = "	".repeat(indent);
     if (item instanceof import_obsidian49.TFile) {
       if (yaml.hideLinkList) {
-        result.push(`${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
+        result.push(`${yaml.isInCallout ? "> " : ""}${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
       } else {
-        result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
+        result.push(`${yaml.isInCallout ? "> " : ""}${indentStr}- [[${item.path}|${item.basename}]]`);
       }
     } else if (item instanceof import_obsidian49.TFolder) {
-      let line = `${indentStr}- ${item.name}`;
+      let line = `${yaml.isInCallout ? "> " : ""}${indentStr}- ${item.name}`;
       let folderNote = null;
       if (plugin instanceof FolderNotesPlugin) {
         folderNote = getFolderNote(plugin, item.path);
       }
       if (folderNote) {
-        line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
+        line = `${yaml.isInCallout ? "> " : ""}${indentStr}- [[${folderNote.path}|${item.name}]]`;
       }
       if (yaml.hideLinkList) {
         line += ' <span class="fv-link-list-item"></span>';
