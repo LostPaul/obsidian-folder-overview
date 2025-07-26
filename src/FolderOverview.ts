@@ -36,6 +36,7 @@ export type defaultOverviewSettings = {
 	useActualLinks: boolean;
 	fmtpIntegration: boolean;
 	titleSize: number;
+	isInCallout: boolean;
 };
 
 export class FolderOverview {
@@ -136,6 +137,7 @@ export class FolderOverview {
 			useActualLinks: yaml?.useActualLinks ?? defaultSettings.useActualLinks,
 			fmtpIntegration: yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
 			titleSize: yaml?.titleSize ?? defaultSettings.titleSize,
+			isInCallout: yaml?.isInCallout ?? false,
 		};
 
 		const customChild = new CustomMarkdownRenderChild(el, this);
@@ -184,7 +186,11 @@ export class FolderOverview {
 		el.empty();
 		el.parentElement?.classList.add('folder-overview-container');
 		if (this.yaml.hideFolderOverview) {
-			el.parentElement?.classList.add('fv-hide-overview');
+			if (this.yaml.isInCallout) {
+				el?.classList.add('fv-hide-overview');
+			} else {
+				el.parentElement?.classList.add('fv-hide-overview');
+			}
 		}
 
 		el.parentElement?.addEventListener('contextmenu', (e) => {
@@ -317,8 +323,8 @@ export class FolderOverview {
 	removeLinkList() {
 		this.plugin.app.vault.process(this.sourceFile, (text) => {
 			const lines = text.split('\n');
-			const linkListStart = `<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
-			const linkListEnd = `<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
+			const linkListStart = `${this.yaml.isInCallout ? '> ' : ''}<span class="fv-link-list-start" id="${this.yaml.id}"></span>`;
+			const linkListEnd = `${this.yaml.isInCallout ? '> ' : ''}<span class="fv-link-list-end" id="${this.yaml.id}"></span>`;
 
 			const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
 			const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
@@ -450,12 +456,13 @@ export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugi
 	const file = plugin.app.vault.getAbstractFileByPath(ctx.sourcePath);
 	if (!(file instanceof TFile)) return;
 	let stringYaml = stringifyYaml(yaml);
-	await plugin.app.vault.process(file, (text) => {
+	plugin.app.vault.process(file, (text) => {
 		const info = ctx.getSectionInfo(el);
 		// check if stringYaml ends with a newline
 		if (stringYaml[stringYaml.length - 1] !== '\n') {
 			stringYaml += '\n';
 		}
+
 		if (info) {
 			const { lineStart } = info;
 			const lineEnd = getCodeBlockEndLine(text, lineStart);
@@ -466,10 +473,15 @@ export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugi
 			overviewBlock += addLinkList ? `\n<span class="fv-link-list-start" id="${yaml.id}"></span>\n<span class="fv-link-list-end" id="${yaml.id}"></span>` : '';
 			lines.splice(lineStart, lineLength + 1, overviewBlock);
 			return lines.join('\n');
+		} else {
+			getOverviews(plugin, file).then((overviews) => {
+				overviews.forEach((overview) => {
+					if (overview.id !== yaml.id) return;
+					updateYamlById(plugin, yaml.id, file, yaml, addLinkList, overview.isInCallout as any as boolean ?? false);
+				});
+			});
 		}
-		let overviewBlock = `\`\`\`folder-overview\n${stringYaml}\`\`\``;
-		overviewBlock += addLinkList ? `\n<span class="fv-link-list-start" id="${yaml.id}"></span>\n<span class="fv-link-list-end" id="${yaml.id}"></span>` : '';
-		return overviewBlock;
+		return text;
 	});
 }
 
@@ -493,7 +505,19 @@ export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlu
 	const content = await plugin.app.vault.read(file);
 	if (!content) return overviews;
 
-	const yamlBlocks = content.match(/```folder-overview\n([\s\S]*?)```/g);
+	const yamlBlocks = content.match(/^(?!>).*```folder-overview\n(?:^(?!>).*[\r\n]*)*?^```$/gm);
+	const calloutYamlBlocks = content.match(/^> ```folder-overview\n([\s\S]*?)```/gm);
+	if (calloutYamlBlocks) {
+		for (const block of calloutYamlBlocks) {
+			const cleanedBlock = block.replace(/^> ```folder-overview\n/, '').replace(/```$/, '').replace(/^> ?/gm, '');
+			const yaml = parseYaml(cleanedBlock);
+			if (yaml) {
+				yaml.isInCallout = true;
+				overviews.push(yaml);
+			}
+		}
+	}
+
 	if (!yamlBlocks) return overviews;
 	for (const block of yamlBlocks) {
 		const yaml = parseYaml(block.replace('```folder-overview\n', '').replace('```', ''));
@@ -504,22 +528,43 @@ export async function getOverviews(plugin: FolderOverviewPlugin | FolderNotesPlu
 	return overviews;
 }
 
-export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesPlugin, overviewId: string, file: TFile, newYaml: defaultOverviewSettings, addLinkList: boolean) {
+export async function updateYamlById(plugin: FolderOverviewPlugin | FolderNotesPlugin, overviewId: string, file: TFile, newYaml: defaultOverviewSettings, addLinkList: boolean, isCallout = false) {
 	await plugin.app.vault.process(file, (text) => {
-		const yamlBlocks = text.match(/```folder-overview\n([\s\S]*?)```/g);
+		const yamlBlocks = isCallout ? text.match(/^> ```folder-overview\n([\s\S]*?)```/gm) : text.match(/^(?!>).*```folder-overview\n(?:^(?!>).*[\r\n]*)*?^```$/gm);
 		if (!yamlBlocks) return text;
+
 		for (const block of yamlBlocks) {
-			const yaml = parseYaml(block.replace('```folder-overview\n', '').replace('```', ''));
+			let cleanedBlock;
+			if (isCallout) {
+				cleanedBlock = block.replace('> ```folder-overview\n', '').replace('```', '');
+				cleanedBlock = cleanedBlock.replace(/^> ?/gm, '');
+			} else {
+				cleanedBlock = block.replace('```folder-overview\n', '').replace('```', '');
+			}
+
+			const yaml = parseYaml(cleanedBlock);
 			if (!yaml) continue;
+
 			if (yaml.id === overviewId) {
 				let stringYaml = stringifyYaml(newYaml);
 				if (stringYaml[stringYaml.length - 1] !== '\n') {
 					stringYaml += '\n';
 				}
-				let newBlock = `\`\`\`folder-overview\n${stringYaml}\`\`\``;
-				if (addLinkList) {
-					newBlock += `\n<span class="fv-link-list-start" id="${newYaml.id}"></span>\n<span class="fv-link-list-end" id="${newYaml.id}"></span>`;
+
+				let newBlock;
+
+				if (isCallout) {
+					newBlock = `> \`\`\`folder-overview\n${stringYaml.split('\n').map((line) => `> ${line}`).join('\n')}\n> \`\`\``;
+				} else {
+					newBlock = `\`\`\`folder-overview\n${stringYaml}\n\`\`\``;
 				}
+
+				if (addLinkList && !isCallout) {
+					newBlock += `\n<span class="fv-link-list-start" id="${newYaml.id}"></span>\n<span class="fv-link-list-end" id="${newYaml.id}"></span>`;
+				} else if (addLinkList && isCallout) {
+					newBlock += `\n> <span class="fv-link-list-start" id="${newYaml.id}"></span>\n> <span class="fv-link-list-end" id="${newYaml.id}"></span>`;
+				}
+
 				text = text.replace(block, newBlock);
 			}
 		}
@@ -660,8 +705,8 @@ export function updateLinkList(files: TAbstractFile[] = [], plugin: FolderOvervi
 	buildLinkList(files, plugin, yaml, pathBlacklist, sourceFile).then((fileLinks: string[]) => {
 		plugin.app.vault.process(sourceFile, (text) => {
 			const lines = text.split('\n');
-			const linkListStart = `<span class="fv-link-list-start" id="${yaml.id}"></span>`;
-			const linkListEnd = `<span class="fv-link-list-end" id="${yaml.id}"></span>`;
+			const linkListStart = `${yaml.isInCallout ? '> ' : ''}<span class="fv-link-list-start" id="${yaml.id}"></span>`;
+			const linkListEnd = `${yaml.isInCallout ? '> ' : ''}<span class="fv-link-list-end" id="${yaml.id}"></span>`;
 
 			const startIdx = lines.findIndex((l) => l.trim() === linkListStart);
 			const endIdx = lines.findIndex((l) => l.trim() === linkListEnd);
@@ -713,12 +758,12 @@ async function buildLinkList(
 
 		if (item instanceof TFile) {
 			if (yaml.hideLinkList) {
-				result.push(`${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
+				result.push(`${yaml.isInCallout ? '> ' : ''}${indentStr}- [[${item.path}|${item.basename}]] <span class="fv-link-list-item"></span>`);
 			} else {
-				result.push(`${indentStr}- [[${item.path}|${item.basename}]]`);
+				result.push(`${yaml.isInCallout ? '> ' : ''}${indentStr}- [[${item.path}|${item.basename}]]`);
 			}
 		} else if (item instanceof TFolder) {
-			let line = `${indentStr}- ${item.name}`;
+			let line = `${yaml.isInCallout ? '> ' : ''}${indentStr}- ${item.name}`;
 			let folderNote: TFile | null | undefined = null;
 
 			if (plugin instanceof FolderNotesPlugin) {
@@ -726,7 +771,7 @@ async function buildLinkList(
 			}
 
 			if (folderNote) {
-				line = `${indentStr}- [[${folderNote.path}|${item.name}]]`;
+				line = `${yaml.isInCallout ? '> ' : ''}${indentStr}- [[${folderNote.path}|${item.name}]]`;
 			}
 
 			if (yaml.hideLinkList) {

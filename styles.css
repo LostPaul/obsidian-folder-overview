@@ -74,6 +74,7 @@
 }
 
 .cm-line:has(.fv-link-list-item),
+li:has(.fv-link-list-item),
 .el-ul:has(.fv-link-list-item),
 .cm-line:has(.fv-link-list-start),
 .cm-line:has(.fv-link-list-end),

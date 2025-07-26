@@ -35,6 +35,7 @@ export const OVERVIEW_SETTINGS: defaultOverviewSettings = {
 	useActualLinks: false,
 	fmtpIntegration: false,
 	titleSize: 1,
+	isInCallout: false,
 };
 
 export const GLOBAL_SETTINGS: globalSettings = {
@@ -549,7 +550,7 @@ async function updateSettings(contentEl: HTMLElement, yaml: defaultOverviewSetti
 	}
 
 	if (file) {
-		await updateYamlById(plugin, yaml.id, file, yaml, addLinkList);
+		await updateYamlById(plugin, yaml.id, file, yaml, addLinkList, yaml.isInCallout);
 	}
 }
 
