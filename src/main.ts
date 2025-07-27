@@ -1,10 +1,13 @@
-import { Plugin, WorkspaceLeaf, Notice, MarkdownPostProcessorContext, parseYaml, debounce } from 'obsidian';
+import type { WorkspaceLeaf, MarkdownPostProcessorContext } from 'obsidian';
+import { Plugin, Notice, parseYaml, debounce } from 'obsidian';
 import { FolderOverviewView, FOLDER_OVERVIEW_VIEW } from './view';
-import { FolderOverview, defaultOverviewSettings } from './FolderOverview';
-import { DEFAULT_SETTINGS, SettingsTab, defaultSettings } from './settings';
+import type { defaultOverviewSettings } from './FolderOverview';
+import { FolderOverview } from './FolderOverview';
+import type { defaultSettings } from './settings';
+import { DEFAULT_SETTINGS, SettingsTab } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
-import FolderNotesPlugin from '../../main';
+import type FolderNotesPlugin from '../../main';
 import { FrontMatterTitlePluginHandler } from './utils/FmtpHandler';
 import { updateAllOverviews } from './utils/functions';
 import { FvIndexDB } from './utils/IndexDB';

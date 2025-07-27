@@ -1,8 +1,10 @@
-import { MarkdownPostProcessorContext, TFolder, TFile } from 'obsidian';
+import type { MarkdownPostProcessorContext } from 'obsidian';
+import { TFolder, TFile } from 'obsidian';
 import { extractFolderName, getFolderNote } from '../../../functions/folderNoteFunctions';
-import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from '../FolderOverview';
+import type { FolderOverview, defaultOverviewSettings } from '../FolderOverview';
+import { sortFiles, filterFiles } from '../FolderOverview';
 import { getFolderPathFromString } from '../../../functions/utils';
-import FolderOverviewPlugin from '../main';
+import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 
 export async function renderListOverview(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: defaultOverviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
@@ -117,13 +119,13 @@ async function goThroughFolders(plugin: FolderOverviewPlugin | FolderNotesPlugin
 	const files = sortFiles(
 		allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null),
 		yaml,
-		plugin
+		plugin,
 	);
 
 	const folders = sortFiles(
 		allFiles.filter((file): file is TFolder => (file instanceof TFolder) && file !== null),
 		yaml,
-		plugin
+		plugin,
 	);
 	const ul = list.createEl('ul', { cls: 'folder-overview-list' });
 

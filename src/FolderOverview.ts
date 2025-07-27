@@ -1,4 +1,5 @@
-import { MarkdownPostProcessorContext, parseYaml, TAbstractFile, TFolder, TFile, stringifyYaml, Notice, Menu, MarkdownRenderChild, App } from 'obsidian';
+import type { MarkdownPostProcessorContext, TAbstractFile, App } from 'obsidian';
+import { parseYaml, TFolder, TFile, stringifyYaml, Notice, Menu, MarkdownRenderChild } from 'obsidian';
 import { FolderOverviewSettings } from './modals/Settings';
 import { getExcludedFolder } from '../../ExcludeFolders/functions/folderFunctions';
 import { getFolderPathFromString } from '../../functions/utils';
@@ -6,13 +7,14 @@ import { FileExplorerOverview } from './styles/FileExplorer';
 import { renderListOverview } from './styles/List';
 import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
-import FolderOverviewPlugin from './main';
+import type FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 import { getFolder, getFolderNote } from '../../functions/folderNoteFunctions';
+import { CardsOverview } from './styles/Cards';
 
 export type includeTypes = 'folder' | 'markdown' | 'canvas' | 'other' | 'pdf' | 'image' | 'audio' | 'video' | 'all';
 
-export type defaultOverviewSettings = {
+export interface defaultOverviewSettings {
 	id: string;
 	folderPath: string;
 	title: string;
@@ -37,7 +39,7 @@ export type defaultOverviewSettings = {
 	fmtpIntegration: boolean;
 	titleSize: number;
 	isInCallout: boolean;
-};
+}
 
 export class FolderOverview {
 	emitter: CustomEventEmitter;
@@ -168,7 +170,7 @@ export class FolderOverview {
 	}
 
 	registerListeners() {
-		const plugin = this.plugin;
+		const { plugin } = this;
 		const handleRename = () => this.handleVaultChange('renamed');
 		const handleCreate = () => this.handleVaultChange('created');
 		const handleDelete = () => this.handleVaultChange('deleted');
@@ -219,7 +221,7 @@ export class FolderOverview {
 
 		this.registerListeners();
 
-		const sourceFolder = this.sourceFolder;
+		const { sourceFolder } = this;
 
 		if (this.yaml.showTitle) {
 			const variables: Record<string, string> = {
@@ -234,7 +236,7 @@ export class FolderOverview {
 			const frontmatter = fileCache?.frontmatter ?? {};
 			const propertyRegex = /\{\{properties\.([\w-]+)\}\}/g;
 
-			let title = this.yaml.title;
+			let { title } = this.yaml;
 
 			// Replace properties.<name>
 			title = title.replace(propertyRegex, (_, prop) => {
@@ -279,28 +281,7 @@ export class FolderOverview {
 		files = sortFiles(files, this.yaml, this.plugin);
 
 		if (this.yaml.style === 'grid') {
-			const grid = root.createEl('div', { cls: 'folder-overview-grid' });
-			files.forEach(async (file) => {
-				const gridItem = grid.createEl('div', { cls: 'folder-overview-grid-item' });
-				const gridArticle = gridItem.createEl('article', { cls: 'folder-overview-grid-item-article' });
-				if (file instanceof TFile) {
-					const fileContent = await plugin.app.vault.read(file);
-					const descriptionEl = gridArticle.createEl('p', { cls: 'folder-overview-grid-item-description' });
-					let description = fileContent.split('\n')[0];
-					if (description.length > 64) {
-						description = description.slice(0, 64) + '...';
-					}
-					descriptionEl.innerText = description;
-					const link = gridArticle.createEl('a', { cls: 'folder-overview-grid-item-link internal-link' });
-					const title = link.createEl('h1', { cls: 'folder-overview-grid-item-link-title' });
-					title.innerText = file.name.replace('.md', '').replace('.canvas', '');
-					link.href = file.path;
-				} else if (file instanceof TFolder) {
-					const folderItem = gridArticle.createEl('div', { cls: 'folder-overview-grid-item-folder' });
-					const folderName = folderItem.createEl('h1', { cls: 'folder-overview-grid-item-folder-name' });
-					folderName.innerText = file.name;
-				}
-			});
+			new CardsOverview(this).render();
 		} else if (this.yaml.style === 'list') {
 			renderListOverview(plugin, ctx, root, this.yaml, this.pathBlacklist, this);
 		} else if (this.yaml.style === 'explorer') {
@@ -353,7 +334,7 @@ export class FolderOverview {
 	}
 
 	fileMenu(file: TFile, e: MouseEvent) {
-		const plugin = this.plugin;
+		const { plugin } = this;
 		const fileMenu = new Menu();
 
 		fileMenu.addItem((item) => {
@@ -391,7 +372,7 @@ export class FolderOverview {
 	}
 
 	folderMenu(folder: TFolder, e: MouseEvent) {
-		const plugin = this.plugin;
+		const { plugin } = this;
 		const folderMenu = new Menu();
 
 		folderMenu.addItem((item) => {
@@ -431,7 +412,7 @@ export class FolderOverview {
 	}
 
 	editOverviewContextMenu(e: MouseEvent) {
-		const plugin = this.plugin;
+		const { plugin } = this;
 		const menu = new Menu();
 
 		menu.addItem((item) => {
@@ -473,14 +454,14 @@ export async function updateYaml(plugin: FolderOverviewPlugin | FolderNotesPlugi
 			overviewBlock += addLinkList ? `\n<span class="fv-link-list-start" id="${yaml.id}"></span>\n<span class="fv-link-list-end" id="${yaml.id}"></span>` : '';
 			lines.splice(lineStart, lineLength + 1, overviewBlock);
 			return lines.join('\n');
-		} else {
-			getOverviews(plugin, file).then((overviews) => {
-				overviews.forEach((overview) => {
-					if (overview.id !== yaml.id) return;
-					updateYamlById(plugin, yaml.id, file, yaml, addLinkList, overview.isInCallout as any as boolean ?? false);
-				});
-			});
 		}
+		getOverviews(plugin, file).then((overviews) => {
+			overviews.forEach((overview) => {
+				if (overview.id !== yaml.id) return;
+				updateYamlById(plugin, yaml.id, file, yaml, addLinkList, overview.isInCallout as any as boolean ?? false);
+			});
+		});
+
 		return text;
 	});
 }
@@ -583,7 +564,7 @@ export async function hasOverviewYaml(plugin: FolderOverviewPlugin | FolderNotes
 
 export function parseOverviewTitle(overview: defaultOverviewSettings, plugin: FolderOverviewPlugin | FolderNotesPlugin, folder: TFolder | null, sourceFile?: TFile): string {
 	const sourceFolderPath = overview.folderPath.trim();
-	let title = overview.title;
+	let { title } = overview;
 
 	const variables: Record<string, string> = {
 		'folderName': folder?.path === '/' || sourceFolderPath === '/' ? 'Vault' : folder?.name ?? '',
@@ -738,7 +719,7 @@ async function buildLinkList(
 	yaml: defaultOverviewSettings,
 	pathBlacklist: string[],
 	sourceFile: TFile,
-	indent = 0
+	indent = 0,
 ): Promise<string[]> {
 	const result: string[] = [];
 	const filtered = (await filterFiles(
@@ -748,7 +729,7 @@ async function buildLinkList(
 		yaml.depth,
 		pathBlacklist,
 		yaml,
-		sourceFile
+		sourceFile,
 	)).filter((file): file is TAbstractFile => file !== null);
 
 	const sorted = sortFiles(filtered, yaml, plugin);
@@ -780,7 +761,7 @@ async function buildLinkList(
 			result.push(line);
 
 			const children = item.children.filter(
-				(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path)
+				(child) => !(child instanceof TFile && folderNote && child.path === folderNote.path),
 			);
 			if (children.length > 0) {
 				const childLinks = await buildLinkList(children, plugin, yaml, pathBlacklist, sourceFile, indent + 1);

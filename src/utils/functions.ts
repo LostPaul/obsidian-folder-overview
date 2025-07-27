@@ -1,16 +1,18 @@
-import { defaultOverviewSettings, filterFiles, getAllFiles, getOverviews, hasOverviewYaml, sortFiles, updateLinkList } from '../FolderOverview';
-import FolderOverviewPlugin from '../main';
-import FolderNotesPlugin from '../../../main';
-import { TAbstractFile, TFile, TFolder } from 'obsidian';
+import type { defaultOverviewSettings } from '../FolderOverview';
+import { filterFiles, getAllFiles, getOverviews, hasOverviewYaml, sortFiles, updateLinkList } from '../FolderOverview';
+import type FolderOverviewPlugin from '../main';
+import type FolderNotesPlugin from '../../../main';
+import type { TAbstractFile } from 'obsidian';
+import { TFile, TFolder } from 'obsidian';
 
 export function getFolderPathFromString(path: string): string {
 	const subString = path.lastIndexOf('/') >= 0 ? path.lastIndexOf('/') : 0;
 	const folderPath = path.substring(0, subString);
 	if (folderPath === '') {
 		return '/';
-	} else {
-		return folderPath;
 	}
+	return folderPath;
+
 }
 
 export async function updateAllOverviews(plugin: FolderOverviewPlugin | FolderNotesPlugin) {

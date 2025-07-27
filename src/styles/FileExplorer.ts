@@ -1,10 +1,12 @@
-import { MarkdownPostProcessorContext, TAbstractFile, TFolder, TFile, setIcon } from 'obsidian';
+import type { MarkdownPostProcessorContext, TAbstractFile } from 'obsidian';
+import { TFolder, TFile, setIcon, debounce } from 'obsidian';
 import { getFolderNote } from '../../../functions/folderNoteFunctions';
 import { getExcludedFolder } from '../../../ExcludeFolders/functions/folderFunctions';
 import { getFolderPathFromString } from '../../../functions/utils';
 import { getFileExplorerElement } from '../../../functions/styleFunctions';
-import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from '../FolderOverview';
-import FolderOverviewPlugin from '../main';
+import type { FolderOverview, defaultOverviewSettings } from '../FolderOverview';
+import { sortFiles, filterFiles } from '../FolderOverview';
+import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 
 export class FileExplorerOverview {
@@ -34,11 +36,11 @@ export class FileExplorerOverview {
 
 	async renderFileExplorer() {
 		this.disconnectListeners();
-		const plugin = this.plugin;
-		const ctx = this.folderOverview.ctx;
-		const root = this.folderOverview.root;
-		const yaml = this.folderOverview.yaml;
-		const folderOverview = this.folderOverview;
+		const { plugin } = this;
+		const { ctx } = this.folderOverview;
+		const { root } = this.folderOverview;
+		const { yaml } = this.folderOverview;
+		const { folderOverview } = this;
 		let folder: HTMLElement | null = null;
 		if (plugin instanceof FolderNotesPlugin) {
 			folder = getFileExplorerElement(yaml.folderPath, plugin);
@@ -102,7 +104,7 @@ export class FileExplorerOverview {
 			}
 		});
 
-		const debouncedRenderFileExplorer = this.debounce(() => this.renderFileExplorer(), 300);
+		const debouncedRenderFileExplorer = debounce(() => this.renderFileExplorer(), 300);
 
 		const handleVaultChange = () => {
 			debouncedRenderFileExplorer();
@@ -130,16 +132,8 @@ export class FileExplorerOverview {
 		});
 	}
 
-	debounce(func: Function, wait: number) {
-		let timeout: number | undefined;
-		return (...args: any[]) => {
-			clearTimeout(timeout);
-			timeout = window.setTimeout(() => func.apply(this, args), wait);
-		};
-	}
-
 	async addFiles(files: TAbstractFile[], childrenElement: HTMLElement, folderOverview: FolderOverview, sourceFolderPath: string) {
-		const plugin = folderOverview.plugin;
+		const { plugin } = folderOverview;
 		const allFiles = await filterFiles(
 			files,
 			plugin,
@@ -147,12 +141,12 @@ export class FileExplorerOverview {
 			folderOverview.yaml.depth,
 			folderOverview.pathBlacklist,
 			folderOverview.yaml,
-			folderOverview.sourceFile
+			folderOverview.sourceFile,
 		);
 		const sortedFiles = sortFiles(
 			(allFiles ?? []).filter((file): file is TAbstractFile => file !== null),
 			folderOverview.yaml,
-			folderOverview.plugin
+			folderOverview.plugin,
 		);
 
 		const folders = sortedFiles.filter((child) => child instanceof TFolder);
@@ -189,12 +183,12 @@ export class FileExplorerOverview {
 	}
 
 	async createFolderEL(plugin: FolderOverviewPlugin | FolderNotesPlugin, child: TFolder, folderOverview: FolderOverview, childrenElement: HTMLElement, sourceFolderPath: string) {
-		const pathBlacklist = folderOverview.pathBlacklist;
+		const { pathBlacklist } = folderOverview;
 		let folderNote: TFile | null | undefined = undefined;
 		if (plugin instanceof FolderNotesPlugin) {
 			folderNote = getFolderNote(plugin, child.path);
 		}
-		const yaml = folderOverview.yaml;
+		const { yaml } = folderOverview;
 		let folderTitle: HTMLElement | null = null;
 		let folderElement: HTMLElement | null = null;
 
@@ -240,7 +234,7 @@ export class FileExplorerOverview {
 			if (yaml.allowDragAndDrop) {
 				folderTitle.draggable = true;
 				folderTitle.addEventListener('dragstart', (e) => {
-					const dragManager = plugin.app.dragManager;
+					const { dragManager } = plugin.app;
 					const dragData = dragManager.dragFolder(e, child);
 					dragManager.onDragStart(e, dragData);
 					folderTitle?.classList.add('is-being-dragged');
@@ -315,8 +309,8 @@ export class FileExplorerOverview {
 	}
 
 	async createFileEL(plugin: FolderOverviewPlugin | FolderNotesPlugin, child: TFile, folderOverview: FolderOverview, childrenElement: HTMLElement) {
-		const yaml = folderOverview.yaml;
-		const pathBlacklist = folderOverview.pathBlacklist;
+		const { yaml } = folderOverview;
+		const { pathBlacklist } = folderOverview;
 
 		if (pathBlacklist.includes(child.path) && !yaml.showFolderNotes) { return; }
 
@@ -336,7 +330,7 @@ export class FileExplorerOverview {
 		if (yaml.allowDragAndDrop) {
 			fileTitle.draggable = true;
 			fileTitle.addEventListener('dragstart', (e) => {
-				const dragManager = plugin.app.dragManager;
+				const { dragManager } = plugin.app;
 				const dragData = dragManager.dragFile(e, child);
 				dragManager.onDragStart(e, dragData);
 				fileTitle.classList.add('is-being-dragged');
