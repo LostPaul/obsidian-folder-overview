@@ -1,8 +1,9 @@
-import type { MarkdownPostProcessorContext } from 'obsidian';
-import { TFolder, TFile } from 'obsidian';
+import { TFolder, TFile, type MarkdownPostProcessorContext } from 'obsidian';
 import { extractFolderName, getFolderNote } from '../../../functions/folderNoteFunctions';
-import type { FolderOverview, defaultOverviewSettings } from '../FolderOverview';
-import { sortFiles, filterFiles } from '../FolderOverview';
+import {
+	sortFiles, filterFiles,
+	type FolderOverview, type defaultOverviewSettings,
+} from '../FolderOverview';
 import { getFolderPathFromString } from '../../../functions/utils';
 import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';

@@ -89,10 +89,13 @@ export class FolderOverviewSettings extends Modal {
 			contentEl.createEl('h2', { text: 'Default folder overview settings' });
 		}
 
-		createOverviewSettings(contentEl, yaml, plugin, defaultSettings, display, el, ctx, undefined, undefined, modal, changedSection);
+		createOverviewSettings(
+			contentEl, yaml, plugin, defaultSettings, display, el, ctx,
+			undefined, undefined, modal, changedSection,
+		);
 	}
 
-	onClose() {
+	onClose(): void {
 		this.plugin.updateOverviewView(this.plugin, this.yaml);
 		const { contentEl } = this;
 		contentEl.empty();

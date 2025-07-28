@@ -1,13 +1,12 @@
-// Credits go to Liam's Periodic Notes Plugin: https://github.com/liamcain/obsidian-periodic-notes and https://github.com/SilentVoid13/Templater
-
-import type { TAbstractFile } from 'obsidian';
-import { TFolder, AbstractInputSuggest } from 'obsidian';
+import { TFolder, AbstractInputSuggest, type TAbstractFile } from 'obsidian';
 import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 export enum FileSuggestMode {
 	TemplateFiles,
 	ScriptFiles,
 }
+
+const MAX_LOADED_FILES = 100;
 
 export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
@@ -26,16 +25,16 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 		const lower_input_str = input_str.toLowerCase();
 		let files: TAbstractFile[] = [];
 		if (this.folder) {
-			files = this.folder.children;
+			files = this.plugin.app.vault.getAllLoadedFiles().slice(0, MAX_LOADED_FILES);
 		} else {
-			files = this.plugin.app.vault.getAllLoadedFiles().slice(0, 100);
+			files = this.plugin.app.vault.getAllLoadedFiles().slice(0, MAX_LOADED_FILES);
 		}
 
-		// @ts-ignore
+		// @ts-expect-error Manually add item to the list
 		folders.push({ path: 'File’s parent folder path' });
 
 		if (this.plugin instanceof FolderNotesPlugin) {
-			// @ts-ignore
+			// @ts-expect-error Manually add item to the list
 			folders.push({ path: 'Path of folder linked to the file' });
 		}
 
@@ -43,7 +42,15 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 			if (
 				folder instanceof TFolder &&
 				folder.path.toLowerCase().contains(lower_input_str) &&
-				(this.plugin instanceof FolderNotesPlugin ? (!this.plugin.settings.excludeFolders.find((f: any) => f.path === folder.path) || this.whitelistSuggester) : true)
+				(
+					this.plugin instanceof FolderNotesPlugin
+						? (
+							!this.plugin.settings.excludeFolders.find(
+								(f: { path: string }) => f.path === folder.path,
+							) || this.whitelistSuggester
+						)
+						: true
+				)
 			) {
 				folders.push(folder);
 			}

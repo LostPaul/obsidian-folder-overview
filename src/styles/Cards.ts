@@ -4,7 +4,7 @@ import type FolderNotesPlugin from '../../../main';
 import type FolderOverviewPlugin from '../main';
 import type { MarkdownPostProcessorContext, TAbstractFile } from 'obsidian';
 import { debounce, TFile, TFolder } from 'obsidian';
-import { getFolderPathFromString } from 'src/utils/functions';
+import { getFolderPathFromString } from '../utils/functions';
 
 export class CardsOverview {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
