@@ -46,7 +46,7 @@ export class ListComponent {
 		this.listEl.empty();
 	}
 
-	addElement(value: string): void	 {
+	addElement(value: string): void {
 		this.listEl.createSpan('setting-hotkey', (span) => {
 			if (value.toLocaleLowerCase() === 'md') {
 				span.innerText = 'markdown';
