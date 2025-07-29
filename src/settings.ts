@@ -5,7 +5,7 @@ import {
 	type TFile,
 } from 'obsidian';
 import {
-	updateYaml, updateYamlById,
+	updateYaml,
 	type defaultOverviewSettings,
 	type includeTypes,
 } from './FolderOverview';
@@ -14,6 +14,7 @@ import { ListComponent } from './utils/ListComponent';
 import type { FolderOverviewSettings } from './modals/Settings';
 import type FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
+import { updateYamlById } from './utils/functions';
 
 
 export interface globalSettings {
@@ -467,58 +468,58 @@ export async function createOverviewSettings(
 				el, ctx, file, settingsTab,
 				modal, 'include-types',
 			);
-			if ((yaml?.includeTypes?.length || 0) < MAX_INCLUDE_TYPES_FOR_DROPDOWN &&
-				!yaml.includeTypes?.includes('all')) {
-				setting.addDropdown((dropdown) => {
-					if (!yaml.includeTypes) {
-						yaml.includeTypes = (plugin instanceof FolderNotesPlugin)
-							? plugin.settings.defaultOverview.includeTypes
-							: plugin.settings.defaultOverviewSettings.includeTypes || [];
-					}
-					yaml.includeTypes = yaml.includeTypes.map(
-						(type: string) => type.toLowerCase(),
-					) as includeTypes[];
-					const options = [
-						{ value: 'markdown', label: 'Markdown' },
-						{ value: 'folder', label: 'Folder' },
-						{ value: 'canvas', label: 'Canvas' },
-						{ value: 'pdf', label: 'PDF' },
-						{ value: 'image', label: 'Image' },
-						{ value: 'audio', label: 'Audio' },
-						{ value: 'video', label: 'Video' },
-						{ value: 'other', label: 'All other file types' },
-						{ value: 'all', label: 'All file types' },
-					];
-
-					options.forEach((option) => {
-						if (!yaml.includeTypes?.includes(option.value as includeTypes)) {
-							dropdown.addOption(option.value, option.label);
-						}
-					});
-					dropdown.addOption('+', '+');
-					dropdown.setValue('+');
-					dropdown.onChange(async (value) => {
-						if (value === 'all') {
-							yaml.includeTypes = yaml.includeTypes?.filter(
-								(type: string) => type === 'folder',
-							);
-							list.setValues(yaml.includeTypes);
-						}
-						await list.addValue(value.toLowerCase());
-						updateSettings(
-							contentEl, yaml, plugin, false,
-							defaultSettings, el, ctx, file,
-						);
-						refresh(
-							contentEl, yaml, plugin,
-							defaultSettings, display,
-							el, ctx, file, settingsTab,
-							modal, 'include-types',
-						);
-					});
-				});
-			}
 		});
+		if ((yaml?.includeTypes?.length || 0) < MAX_INCLUDE_TYPES_FOR_DROPDOWN &&
+			!yaml.includeTypes?.includes('all')) {
+			setting.addDropdown((dropdown) => {
+				if (!yaml.includeTypes) {
+					yaml.includeTypes = (plugin instanceof FolderNotesPlugin)
+						? plugin.settings.defaultOverview.includeTypes
+						: plugin.settings.defaultOverviewSettings.includeTypes || [];
+				}
+				yaml.includeTypes = yaml.includeTypes.map(
+					(type: string) => type.toLowerCase(),
+				) as includeTypes[];
+				const options = [
+					{ value: 'markdown', label: 'Markdown' },
+					{ value: 'folder', label: 'Folder' },
+					{ value: 'canvas', label: 'Canvas' },
+					{ value: 'pdf', label: 'PDF' },
+					{ value: 'image', label: 'Image' },
+					{ value: 'audio', label: 'Audio' },
+					{ value: 'video', label: 'Video' },
+					{ value: 'other', label: 'All other file types' },
+					{ value: 'all', label: 'All file types' },
+				];
+
+				options.forEach((option) => {
+					if (!yaml.includeTypes?.includes(option.value as includeTypes)) {
+						dropdown.addOption(option.value, option.label);
+					}
+				});
+				dropdown.addOption('+', '+');
+				dropdown.setValue('+');
+				dropdown.onChange(async (value) => {
+					if (value === 'all') {
+						yaml.includeTypes = yaml.includeTypes?.filter(
+							(type: string) => type === 'folder',
+						);
+						list.setValues(yaml.includeTypes);
+					}
+					await list.addValue(value.toLowerCase());
+					updateSettings(
+						contentEl, yaml, plugin, false,
+						defaultSettings, el, ctx, file,
+					);
+					refresh(
+						contentEl, yaml, plugin,
+						defaultSettings, display,
+						el, ctx, file, settingsTab,
+						modal, 'include-types',
+					);
+				});
+			});
+		}
 	});
 
 	createOrReplaceSetting(contentEl, 'file-tag', changedSection, (settingEl) => {

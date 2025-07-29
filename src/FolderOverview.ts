@@ -104,16 +104,16 @@ export class FolderOverview {
 		this.source = source;
 		this.el = el;
 		this.sourceFile = this.getSourceFile(ctx);
-
-		this.setSourceFolder();
-
-		this.defaultSettings = defaultSettings;
 		this.yaml = buildYamlConfig(
 			yaml,
 			defaultSettings,
 			ctx,
 			includeTypes,
 		);
+
+		this.setSourceFolder();
+
+		this.defaultSettings = defaultSettings;
 
 		const customChild = new CustomMarkdownRenderChild(el, this);
 		ctx.addChild(customChild);
@@ -275,10 +275,9 @@ export class FolderOverview {
 				break;
 			}
 			default: {
-				const folderPath = getFolderPathFromString(this.ctx.sourcePath);
-				const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
+				const sourceFolder = this.plugin.app.vault
+					.getAbstractFileByPath(this.yaml.folderPath);
 				if (sourceFolder instanceof TFolder) {
-					this.yaml.folderPath = sourceFolder.path;
 					this.sourceFolder = sourceFolder;
 				}
 			}
@@ -781,7 +780,9 @@ async function filterSingleFile(
 		'flac', 'ogg', 'oga', 'opus',
 	];
 
-	if (!isFileTypeIncluded(extension, includeTypes, imageTypes, videoTypes, audioTypes)) {
+	if (isFile && !isFileTypeIncluded(
+		extension, includeTypes, imageTypes, videoTypes, audioTypes,
+	)) {
 		return null;
 	}
 
@@ -811,12 +812,12 @@ function isFileTypeIncluded(
 ): boolean {
 	if (includeTypes.length === 0 || includeTypes.includes('all')) return true;
 	if ((extension === 'md' || extension === 'markdown') &&
-		!includeTypes.includes('markdown')) return true;
-	if (extension === 'canvas' && !includeTypes.includes('canvas')) return true;
-	if (extension === 'pdf' && !includeTypes.includes('pdf')) return true;
-	if (imageTypes.includes(extension) && !includeTypes.includes('image')) return true;
-	if (videoTypes.includes(extension) && !includeTypes.includes('video')) return true;
-	if (audioTypes.includes(extension) && !includeTypes.includes('audio')) return true;
+		includeTypes.includes('markdown')) return true;
+	if (extension === 'canvas' && includeTypes.includes('canvas')) return true;
+	if (extension === 'pdf' && includeTypes.includes('pdf')) return true;
+	if (imageTypes.includes(extension) && includeTypes.includes('image')) return true;
+	if (videoTypes.includes(extension) && includeTypes.includes('video')) return true;
+	if (audioTypes.includes(extension) && includeTypes.includes('audio')) return true;
 	return false;
 }
 
