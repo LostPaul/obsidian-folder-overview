@@ -1,9 +1,15 @@
-import type { defaultOverviewSettings, FolderOverview } from '../FolderOverview';
-import { filterFiles, sortFiles } from '../FolderOverview';
+import {
+	filterFiles, sortFiles,
+	type defaultOverviewSettings,
+	type FolderOverview,
+} from '../FolderOverview';
 import type FolderNotesPlugin from '../../../main';
 import type FolderOverviewPlugin from '../main';
-import type { MarkdownPostProcessorContext, TAbstractFile } from 'obsidian';
-import { debounce, TFile, TFolder } from 'obsidian';
+import {
+	debounce, TFile, TFolder,
+	type MarkdownPostProcessorContext,
+	type TAbstractFile,
+} from 'obsidian';
 import { getFolderPathFromString } from '../utils/functions';
 
 export class CardsOverview {
@@ -22,14 +28,14 @@ export class CardsOverview {
 		this.ctx = folderOverview.ctx;
 	}
 
-	disconnectListeners() {
+	disconnectListeners(): void {
 		this.eventListeners.forEach((unregister) => {
 			unregister();
 		});
 		this.eventListeners = [];
 	}
 
-	async render() {
+	async render(): Promise<void> {
 		const overviewList = this.folderOverview.listEl;
 		overviewList?.empty();
 		if (!overviewList) return;
@@ -37,7 +43,8 @@ export class CardsOverview {
 		let tFolder = this.plugin.app.vault.getAbstractFileByPath(this.yaml.folderPath);
 		if (!tFolder && this.yaml.folderPath.trim() === '') {
 			if (this.ctx.sourcePath.includes('/')) {
-				tFolder = this.plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(this.ctx.sourcePath));
+				const folderPath = getFolderPathFromString(this.ctx.sourcePath);
+				tFolder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
 			} else {
 				this.yaml.folderPath = '/';
 				tFolder = this.plugin.app.vault.getAbstractFileByPath('/');
@@ -55,13 +62,14 @@ export class CardsOverview {
 		this.addFiles(tFolder.children);
 	}
 
-	handleVaultChange() {
+	handleVaultChange(): void {
+		const DEBOUNCE_DELAY_MS = 1000;
 		debounce(() => {
 			this.render();
-		}, 1000)();
+		}, DEBOUNCE_DELAY_MS)();
 	}
 
-	async addFiles(files: TAbstractFile[]) {
+	async addFiles(files: TAbstractFile[]): Promise<void> {
 		const allFiles = await filterFiles(
 			files,
 			this.plugin,
@@ -92,13 +100,13 @@ export class CardsOverview {
 		}
 	}
 
-	async createFolderEl(folder: TFolder) {
+	async createFolderEl(folder: TFolder): Promise<void> {
 		const folderEl = this.root.createDiv({ cls: 'fv-card-folder' });
 		folderEl.createEl('h3', { text: folder.name });
 		folderEl.createDiv({ cls: 'fv-card-folder-path', text: folder.path });
 	}
 
-	async createFileEl(file: TFile) {
+	async createFileEl(file: TFile): Promise<void> {
 		const fileEl = this.root.createDiv({ cls: 'fv-card-file' });
 		fileEl.createEl('h3', { text: file.name });
 		fileEl.createDiv({ cls: 'fv-card-file-path', text: file.path });
