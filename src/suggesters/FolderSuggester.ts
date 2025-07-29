@@ -25,7 +25,7 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 		const lower_input_str = input_str.toLowerCase();
 		let files: TAbstractFile[] = [];
 		if (this.folder) {
-			files = this.plugin.app.vault.getAllLoadedFiles().slice(0, MAX_LOADED_FILES);
+			files = this.folder.children.slice(0, MAX_LOADED_FILES);
 		} else {
 			files = this.plugin.app.vault.getAllLoadedFiles().slice(0, MAX_LOADED_FILES);
 		}
