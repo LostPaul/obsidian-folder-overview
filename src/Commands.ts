@@ -1,7 +1,6 @@
 import FolderNotesPlugin from '../../main';
 import FolderOverviewPlugin from './main';
-import type { Menu, Editor, MarkdownView } from 'obsidian';
-import { stringifyYaml, Notice } from 'obsidian';
+import { Menu, Editor, MarkdownView, stringifyYaml, Notice } from 'obsidian';
 
 export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNotesPlugin) {
 	plugin.addCommand({
@@ -16,7 +15,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 		id: 'insert-folder-overview',
 		name: 'Insert folder overview',
 		editorCheckCallback: (checking: boolean, editor: Editor) => {
-			const { line } = editor.getCursor();
+			const line = editor.getCursor().line;
 			const lineText = editor.getLine(line);
 			if (lineText.trim() === '' || lineText.trim() === '>') {
 				if (!checking) {
@@ -29,7 +28,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 	});
 
 	plugin.registerEvent(plugin.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
-		const { line } = editor.getCursor();
+		const line = editor.getCursor().line;
 		const lineText = editor.getLine(line);
 		if (lineText.trim() === '' || lineText.trim() === '>') {
 			menu.addItem((item) => {
@@ -56,7 +55,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 }
 
 function insertOverview(editor: Editor, plugin: FolderOverviewPlugin | FolderNotesPlugin) {
-	const { line } = editor.getCursor();
+	const line = editor.getCursor().line;
 	const lineText = editor.getLine(line);
 	const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings.defaultOverviewSettings : plugin.settings.defaultOverview);
 	json.id = crypto.randomUUID();

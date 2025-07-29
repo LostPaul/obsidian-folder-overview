@@ -1,12 +1,10 @@
-import type { TFile, WorkspaceLeaf, MarkdownPostProcessorContext, SettingTab } from 'obsidian';
-import { ItemView, Setting } from 'obsidian';
-import type { defaultOverviewSettings } from './FolderOverview';
-import { getOverviews, parseOverviewTitle } from './FolderOverview';
+import { ItemView, Setting, TFile, WorkspaceLeaf, MarkdownPostProcessorContext, SettingTab } from 'obsidian';
+import { getOverviews, defaultOverviewSettings, parseOverviewTitle } from './FolderOverview';
 import { createOverviewSettings } from './settings';
 import FolderOverviewPlugin from './main';
 export const FOLDER_OVERVIEW_VIEW = 'folder-overview-view';
 import FolderNotesPlugin from '../../main';
-import type { FolderOverviewSettings } from './modals/Settings';
+import { FolderOverviewSettings } from './modals/Settings';
 
 export class FolderOverviewView extends ItemView {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
@@ -33,7 +31,7 @@ export class FolderOverviewView extends ItemView {
 			this.plugin.app.workspace.on('file-open', (file) => {
 				this.activeFile = file;
 				this.display(this.contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, undefined, undefined, file, undefined, undefined, 'all');
-			}),
+			})
 		);
 	}
 
@@ -64,7 +62,7 @@ export class FolderOverviewView extends ItemView {
 		file?: TFile | null,
 		settingsTab?: SettingTab,
 		modal?: FolderOverviewSettings,
-		changedSection?: string | null | undefined,
+		changedSection?: string | null | undefined
 	) {
 		this.contentEl = contentEl;
 		this.yaml = yaml;
@@ -106,7 +104,7 @@ export class FolderOverviewView extends ItemView {
 								overview as any as defaultOverviewSettings,
 								plugin,
 								activeFile.parent,
-								activeFile,
+								activeFile
 							);
 
 							const count = (titleCounts[title] || 0) + 1;

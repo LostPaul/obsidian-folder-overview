@@ -1,15 +1,13 @@
-import type { MarkdownPostProcessorContext, TFile } from 'obsidian';
-import { normalizePath, PluginSettingTab, Setting, TFolder } from 'obsidian';
-import type { defaultOverviewSettings, includeTypes } from './FolderOverview';
-import { updateYaml, updateYamlById } from './FolderOverview';
+import { MarkdownPostProcessorContext, normalizePath, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
+import { updateYaml, updateYamlById, defaultOverviewSettings, includeTypes } from './FolderOverview';
 import { FolderSuggest } from './suggesters/FolderSuggester';
 import { ListComponent } from './utils/ListComponent';
-import type { FolderOverviewSettings } from './modals/Settings';
-import type FolderOverviewPlugin from './main';
+import { FolderOverviewSettings } from './modals/Settings';
+import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 
 
-export interface globalSettings {
+export type globalSettings = {
 	autoUpdateLinks: boolean;
 }
 
@@ -44,10 +42,10 @@ export const GLOBAL_SETTINGS: globalSettings = {
 	autoUpdateLinks: false,
 };
 
-export interface defaultSettings {
+export type defaultSettings = {
 	defaultOverviewSettings: defaultOverviewSettings;
 	globalSettings: globalSettings;
-}
+};
 
 export const DEFAULT_SETTINGS = {
 	defaultOverviewSettings: OVERVIEW_SETTINGS,
@@ -80,7 +78,7 @@ export class SettingsTab extends PluginSettingTab {
 						} else {
 							this.plugin.fvIndexDB.active = false;
 						}
-					}),
+					})
 			);
 
 		containerEl.createEl('h3', { text: 'Overviews default settings' });
@@ -103,7 +101,7 @@ const createOrReplaceSetting = (
 	container: HTMLElement,
 	section: string,
 	changedSection: string | null,
-	renderSetting: (el: HTMLElement) => void,
+	renderSetting: (el: HTMLElement) => void
 ) => {
 	let sectionContainer = container.querySelector(`.setting-${section}`);
 	if (sectionContainer) {
@@ -111,9 +109,9 @@ const createOrReplaceSetting = (
 			sectionContainer.empty();
 			renderSetting(sectionContainer as HTMLElement);
 			return;
+		} else {
+			return;
 		}
-		return;
-
 	}
 
 	sectionContainer = container.createDiv({ cls: `setting-${section} overview-setting-item-fv` });
@@ -135,7 +133,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.autoSync = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 	});
 
@@ -150,7 +148,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.allowDragAndDrop = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 	});
 
@@ -165,7 +163,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.showTitle = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 	});
 
@@ -179,7 +177,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						href: 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#title',
 					});
 					link.target = '_blank';
-				}),
+				})
 			)
 			.addText((text) =>
 				text
@@ -187,7 +185,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value) => {
 						yaml.title = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
-					}),
+					})
 			);
 	});
 
@@ -204,7 +202,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.titleSize = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 	});
 
@@ -219,7 +217,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						href: 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#folder-path',
 					});
 					link.target = '_blank';
-				}),
+				})
 			)
 			.addSearch((search) => {
 				new FolderSuggest(search.inputEl, plugin, false);
@@ -252,7 +250,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.useActualLinks = value;
 						updateSettings(contentEl, yaml, plugin, yaml.useActualLinks, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 	});
 
@@ -267,7 +265,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.hideFolderOverview = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 		hideOverviewSeting.settingEl.classList.add('fn-hide-overview-setting');
 	});
@@ -283,7 +281,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 						yaml.hideLinkList = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 		hideLinkListSetting.settingEl.classList.add('fn-hide-link-list-setting');
 	});
@@ -291,18 +289,17 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 	createOrReplaceSetting(contentEl, 'overview-style', changedSection, (settingEl) => {
 		new Setting(settingEl)
 			.setName('Overview style')
-			.setDesc('Choose the style of the overview.')
+			.setDesc('Choose the style of the overview (grid style soon)')
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('list', 'List')
 					.addOption('explorer', 'Explorer')
-					.addOption('grid', 'Grid')
 					.setValue(yaml?.style || 'list')
 					.onChange(async (value: 'list') => {
 						yaml.style = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
 						refresh(contentEl, yaml, plugin, defaultSettings, display, el, ctx, file, settingsTab, modal);
-					}),
+					})
 			);
 	});
 
@@ -376,7 +373,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value) => {
 						yaml.showFolderNotes = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
-					}),
+					})
 			);
 	});
 
@@ -392,7 +389,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value) => {
 						yaml.depth = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
-					}),
+					})
 			);
 	});
 
@@ -409,7 +406,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value: 'name' | 'created' | 'modified') => {
 						yaml.sortBy = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
-					}),
+					})
 			)
 			.addDropdown((dropdown) => {
 				dropdown
@@ -480,7 +477,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value) => {
 						yaml.storeFolderCondition = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
-					}),
+					})
 			);
 	});
 
@@ -508,7 +505,7 @@ export async function createOverviewSettings(contentEl: HTMLElement, yaml: defau
 					.onChange(async (value) => {
 						yaml.fmtpIntegration = value;
 						updateSettings(contentEl, yaml, plugin, false, defaultSettings, el, ctx, file);
-					}),
+					})
 			);
 	});
 

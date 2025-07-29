@@ -1,7 +1,6 @@
-import type { TFile } from 'obsidian';
-import { Notice } from 'obsidian';
-import type FolderOverviewPlugin from '../main';
-import type FolderNotesPlugin from '../../../main';
+import { Notice, TFile } from 'obsidian';
+import FolderOverviewPlugin from '../main';
+import FolderNotesPlugin from '../../../main';
 import { hasOverviewYaml } from '../FolderOverview';
 
 export class FvIndexDB {

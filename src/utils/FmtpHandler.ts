@@ -1,7 +1,6 @@
-import type { Events, ApiInterface, DeferInterface, ListenerRef, EventDispatcherInterface } from 'front-matter-plugin-api-provider';
-import { getDefer } from 'front-matter-plugin-api-provider';
-import type { App, TFile, TFolder } from 'obsidian';
-import type FolderOverviewPlugin from '../main';
+import { getDefer, Events, ApiInterface, DeferInterface, ListenerRef, EventDispatcherInterface } from 'front-matter-plugin-api-provider';
+import { App, TFile, TFolder } from 'obsidian';
+import FolderOverviewPlugin from '../main';
 export class FrontMatterTitlePluginHandler {
 	plugin: FolderOverviewPlugin;
 	app: App;

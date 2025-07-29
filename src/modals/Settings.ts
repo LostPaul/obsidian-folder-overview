@@ -1,11 +1,9 @@
-import type { App, MarkdownPostProcessorContext, TFile, SettingTab } from 'obsidian';
-import { Modal } from 'obsidian';
-import type { defaultOverviewSettings, includeTypes } from '../FolderOverview';
-import { updateYaml } from '../FolderOverview';
+import { App, Modal, MarkdownPostProcessorContext, TFile, SettingTab } from 'obsidian';
+import { defaultOverviewSettings, includeTypes, updateYaml } from '../FolderOverview';
 import { getFolderPathFromString } from '../utils/functions';
 import { createOverviewSettings } from '../settings';
-import type FolderOverviewPlugin from '../main';
-import type FolderNotesPlugin from '../../../main';
+import FolderOverviewPlugin from '../main';
+import FolderNotesPlugin from '../../../main';
 export class FolderOverviewSettings extends Modal {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
 	app: App;
