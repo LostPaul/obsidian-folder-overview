@@ -35,7 +35,9 @@ export function getCodeBlockEndLine(text: string, startLine: number, count = 1):
 	let line = startLine + 1;
 	const lines = text.split('\n');
 	while (line < lines.length) {
-		if (count > MAX_CODE_BLOCK_SEARCH_COUNT) { return CODE_BLOCK_END_NOT_FOUND; }
+		if (count > MAX_CODE_BLOCK_SEARCH_COUNT) {
+			return CODE_BLOCK_END_NOT_FOUND;
+		}
 		if (lines[line].startsWith('```')) {
 			return line;
 		}
