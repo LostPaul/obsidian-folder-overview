@@ -8,8 +8,8 @@ import {
 import { updateYaml, type defaultOverviewSettings, type includeTypes } from '../FolderOverview';
 import { getFolderPathFromString } from '../utils/functions';
 import { createOverviewSettings } from '../settings';
-import type FolderOverviewPlugin from '../main';
-import type FolderNotesPlugin from '../../../main';
+import FolderOverviewPlugin from '../main';
+import FolderNotesPlugin from '../../../main';
 export class FolderOverviewSettings extends Modal {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
 	app: App;

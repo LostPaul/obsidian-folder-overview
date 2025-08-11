@@ -16,7 +16,7 @@ import { FileExplorerOverview } from './styles/FileExplorer';
 import { renderListOverview } from './styles/List';
 import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
-import type FolderOverviewPlugin from './main';
+import FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 import { getFolder } from '../../functions/folderNoteFunctions';
 import { CardsOverview } from './styles/Cards';
@@ -40,7 +40,7 @@ export type includeTypes =
 	| 'video'
 	| 'all';
 
-export interface defaultOverviewSettings {
+export type defaultOverviewSettings = {
 	id: string;
 	folderPath: string;
 	title: string;
@@ -65,7 +65,7 @@ export interface defaultOverviewSettings {
 	fmtpIntegration: boolean;
 	titleSize: number;
 	isInCallout: boolean;
-}
+};
 
 export class FolderOverview {
 	emitter: CustomEventEmitter;
@@ -404,7 +404,6 @@ export class FolderOverview {
 		root: HTMLElement,
 	): void {
 		if (this.yaml.style === 'grid') {
-			new CardsOverview(this).render();
 		} else if (this.yaml.style === 'list') {
 			renderListOverview(
 				plugin, ctx, root,
@@ -609,7 +608,6 @@ export async function updateYaml(
 				);
 			});
 		});
-
 		return text;
 	});
 }

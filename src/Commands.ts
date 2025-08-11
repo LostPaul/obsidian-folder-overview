@@ -16,7 +16,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 		id: 'insert-folder-overview',
 		name: 'Insert folder overview',
 		editorCheckCallback: (checking: boolean, editor: Editor) => {
-			const { line } = editor.getCursor();
+			const line = editor.getCursor().line;
 			const lineText = editor.getLine(line);
 			if (lineText.trim() === '' || lineText.trim() === '>') {
 				if (!checking) {

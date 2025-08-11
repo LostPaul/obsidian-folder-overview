@@ -10,7 +10,7 @@ export class FileSuggest extends AbstractInputSuggest<TFile> {
 	plugin: FolderNotesPlugin | FolderOverviewPlugin;
 	constructor(
         public inputEl: HTMLInputElement,
-        plugin: FolderNotesPlugin | FolderOverviewPlugin,
+        plugin: FolderNotesPlugin | FolderOverviewPlugin
 	) {
 		super(plugin.app, inputEl);
 		this.plugin = plugin;
