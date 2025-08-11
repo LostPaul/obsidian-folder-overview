@@ -1,7 +1,14 @@
-import { Plugin, WorkspaceLeaf, Notice, MarkdownPostProcessorContext, parseYaml, debounce } from 'obsidian';
+import {
+	Plugin,
+	Notice,
+	parseYaml,
+	debounce,
+	type WorkspaceLeaf,
+	type MarkdownPostProcessorContext,
+} from 'obsidian';
 import { FolderOverviewView, FOLDER_OVERVIEW_VIEW } from './view';
-import { FolderOverview, defaultOverviewSettings } from './FolderOverview';
-import { DEFAULT_SETTINGS, SettingsTab, defaultSettings } from './settings';
+import { FolderOverview, type defaultOverviewSettings } from './FolderOverview';
+import { DEFAULT_SETTINGS, SettingsTab, type defaultSettings } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
 import FolderNotesPlugin from '../../main';
@@ -14,7 +21,7 @@ export default class FolderOverviewPlugin extends Plugin {
 	settingsTab: SettingsTab;
 	fmtpHandler: FrontMatterTitlePluginHandler;
 	fvIndexDB: FvIndexDB;
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 		this.settingsTab = new SettingsTab(this);
 		this.addSettingTab(this.settingsTab);
@@ -40,20 +47,32 @@ export default class FolderOverviewPlugin extends Plugin {
 		this.app.vault.on('create', () => this.handleVaultChange());
 		this.app.vault.on('delete', () => this.handleVaultChange());
 
-		this.registerMarkdownCodeBlockProcessor('folder-overview', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
-			this.handleOverviewBlock(source, el, ctx);
-		});
+		this.registerMarkdownCodeBlockProcessor(
+			'folder-overview',
+			(
+				source: string,
+				el: HTMLElement,
+				ctx: MarkdownPostProcessorContext,
+			) => {
+				this.handleOverviewBlock(source, el, ctx);
+			},
+		);
 		console.log('loading Folder Overview plugin');
 	}
 
-	handleVaultChange() {
+	handleVaultChange(): void {
+		const DEBOUNCE_DELAY_MS = 2000;
 		if (!this.settings.globalSettings.autoUpdateLinks) return;
 		debounce(() => {
 			updateAllOverviews(this);
-		}, 2000, true)();
+		}, DEBOUNCE_DELAY_MS, true)();
 	}
 
-	async handleOverviewBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+	async handleOverviewBlock(
+		source: string,
+		el: HTMLElement,
+		ctx: MarkdownPostProcessorContext,
+	): Promise<void> {
 		const observer = new MutationObserver(() => {
 			const editButton = el.parentElement?.childNodes.item(1);
 			if (editButton) {
@@ -61,7 +80,10 @@ export default class FolderOverviewPlugin extends Plugin {
 					e.stopImmediatePropagation();
 					e.preventDefault();
 					e.stopPropagation();
-					new FolderOverviewSettings(this.app, this, parseYaml(source), ctx, el, this.settings.defaultOverviewSettings).open();
+					new FolderOverviewSettings(
+						this.app, this, parseYaml(source),
+						ctx, el, this.settings.defaultOverviewSettings,
+					).open();
 				}, { capture: true });
 			}
 		});
@@ -73,39 +95,47 @@ export default class FolderOverviewPlugin extends Plugin {
 
 		try {
 			this.app.workspace.onLayoutReady(async () => {
-				const folderOverview = new FolderOverview(this, ctx, source, el, this.settings.defaultOverviewSettings);
-				await folderOverview.create(this, parseYaml(source), el, ctx);
+				const folderOverview = new FolderOverview(
+					this, ctx, source,
+					el, this.settings.defaultOverviewSettings,
+				);
+				await folderOverview.create(this, el, ctx);
 				this.updateOverviewView(this);
 			});
 		} catch (e) {
+			// eslint-disable-next-line max-len
 			new Notice('Error creating folder overview (folder notes plugin) - check console for more details');
 			console.error(e);
 		}
 	}
 
-	async onunload() {
-		console.log('unloading Folder Overview plugin');
+	async onunload(): Promise<void> {
+		console.log('Unloading Folder Overview plugin');
 	}
 
-	async loadSettings() {
+	async loadSettings(): Promise<void> {
 		const data = await this.loadData();
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 
 		if (!this.settings.defaultOverviewSettings) {
-			this.settings.defaultOverviewSettings = { ...this.settings } as any;
+			this.settings.defaultOverviewSettings = {
+				...DEFAULT_SETTINGS.defaultOverviewSettings,
+				...(data?.defaultOverviewSettings ?? {}),
+			};
 		}
 
 		if (data?.firstTimeInsertOverview === undefined) {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 			// @ts-ignore
 			this.settings.firstTimeInsertOverview = true;
 		}
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 
-	async activateOverviewView() {
+	async activateOverviewView(): Promise<void> {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
@@ -126,21 +156,37 @@ export default class FolderOverviewPlugin extends Plugin {
 	updateViewDropdown = updateViewDropdown;
 }
 
-export async function updateOverviewView(plugin: FolderOverviewPlugin | FolderNotesPlugin, newYaml?: defaultOverviewSettings) {
+export async function updateOverviewView(
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+	newYaml?: defaultOverviewSettings,
+): Promise<void> {
 	const { workspace } = plugin.app;
 	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 	if (!leaf) return;
-	const view = leaf.view as any as FolderOverviewView;
+	const view = leaf.view as FolderOverviewView;
 	if (!view) return;
 	if (!view.yaml) return;
 	const yaml = view.yaml.id === '' ? view.yaml : newYaml;
-	view.display(view.contentEl, yaml ?? view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'all');
+	view.display(
+		view.contentEl, yaml ?? view.yaml,
+		plugin, view.defaultSettings,
+		view.display, undefined, undefined,
+		view.activeFile, plugin.settingsTab,
+		view.modal, 'all',
+	);
 }
 
-export async function updateViewDropdown(plugin: FolderOverviewPlugin | FolderNotesPlugin) {
+export async function updateViewDropdown(
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+): Promise<void> {
 	const { workspace } = plugin.app;
 	const leaf = workspace.getLeavesOfType(FOLDER_OVERVIEW_VIEW)[0];
 	if (!leaf) return;
-	const view = leaf.view as any as FolderOverviewView;
-	view.display(view.contentEl, view.yaml, plugin, view.defaultSettings, view.display, undefined, undefined, view.activeFile, plugin.settingsTab, view.modal, 'dropdown');
+	const view = leaf.view as FolderOverviewView;
+	view.display(
+		view.contentEl, view.yaml, plugin,
+		view.defaultSettings, view.display,
+		undefined, undefined, view.activeFile,
+		plugin.settingsTab, view.modal, 'dropdown',
+	);
 }

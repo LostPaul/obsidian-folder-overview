@@ -1,6 +1,13 @@
-import { getDefer, Events, ApiInterface, DeferInterface, ListenerRef, EventDispatcherInterface } from 'front-matter-plugin-api-provider';
-import { App, TFile, TFolder } from 'obsidian';
-import FolderOverviewPlugin from '../main';
+import {
+	type Events,
+	type ApiInterface,
+	type DeferInterface,
+	type ListenerRef,
+	type EventDispatcherInterface,
+	getDefer,
+} from 'front-matter-plugin-api-provider';
+import type { App, TFile, TFolder } from 'obsidian';
+import type FolderOverviewPlugin from '../main';
 export class FrontMatterTitlePluginHandler {
 	plugin: FolderOverviewPlugin;
 	app: App;
@@ -13,7 +20,7 @@ export class FrontMatterTitlePluginHandler {
 		this.plugin = plugin;
 		this.app = plugin.app;
 
-		(async () => {
+		(async (): Promise<void> => {
 			this.deffer = getDefer(this.app);
 			if (this.deffer.isPluginReady()) {
 				this.api = this.deffer.getApi();
@@ -30,7 +37,8 @@ export class FrontMatterTitlePluginHandler {
 			}
 		})();
 	}
-	deleteEvent() {
+
+	deleteEvent(): void {
 		if (this.eventRef) {
 			this.dispatcher.removeListener(this.eventRef);
 		}

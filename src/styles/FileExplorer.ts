@@ -1,10 +1,17 @@
-import { MarkdownPostProcessorContext, TAbstractFile, TFolder, TFile, setIcon } from 'obsidian';
+import {
+	TFolder, TFile,
+	setIcon, debounce,
+	type MarkdownPostProcessorContext,
+	type TAbstractFile,
+} from 'obsidian';
 import { getFolderNote } from '../../../functions/folderNoteFunctions';
 import { getExcludedFolder } from '../../../ExcludeFolders/functions/folderFunctions';
 import { getFolderPathFromString } from '../../../functions/utils';
 import { getFileExplorerElement } from '../../../functions/styleFunctions';
-import { FolderOverview, defaultOverviewSettings, sortFiles, filterFiles } from '../FolderOverview';
-import FolderOverviewPlugin from '../main';
+import {
+	sortFiles, filterFiles, type FolderOverview, type defaultOverviewSettings,
+} from '../FolderOverview';
+import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 
 export class FileExplorerOverview {
@@ -16,7 +23,14 @@ export class FileExplorerOverview {
 	root: HTMLElement;
 
 	eventListeners: (() => void)[] = [];
-	constructor(plugin: FolderOverviewPlugin | FolderNotesPlugin, ctx: MarkdownPostProcessorContext, root: HTMLElement, yaml: defaultOverviewSettings, pathBlacklist: string[], folderOverview: FolderOverview) {
+	constructor(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		ctx: MarkdownPostProcessorContext,
+		root: HTMLElement,
+		yaml: defaultOverviewSettings,
+		pathBlacklist: string[],
+		folderOverview: FolderOverview,
+	) {
 		this.plugin = plugin;
 		this.folderOverview = folderOverview;
 		this.pathBlacklist = pathBlacklist;
@@ -25,14 +39,14 @@ export class FileExplorerOverview {
 		this.root = root;
 	}
 
-	disconnectListeners() {
+	disconnectListeners(): void {
 		this.eventListeners.forEach((unregister) => {
 			unregister();
 		});
 		this.eventListeners = [];
 	}
 
-	async renderFileExplorer() {
+	async renderFileExplorer(): Promise<void> {
 		this.disconnectListeners();
 		const plugin = this.plugin;
 		const ctx = this.folderOverview.ctx;
@@ -51,7 +65,8 @@ export class FileExplorerOverview {
 		let tFolder = plugin.app.vault.getAbstractFileByPath(yaml.folderPath);
 		if (!tFolder && yaml.folderPath.trim() === '') {
 			if (ctx.sourcePath.includes('/')) {
-				tFolder = plugin.app.vault.getAbstractFileByPath(getFolderPathFromString(ctx.sourcePath));
+				const folderPath = getFolderPathFromString(ctx.sourcePath);
+				tFolder = plugin.app.vault.getAbstractFileByPath(folderPath);
 			} else {
 				yaml.folderPath = '/';
 				tFolder = plugin.app.vault.getAbstractFileByPath('/');
@@ -72,39 +87,43 @@ export class FileExplorerOverview {
 		const newFolderElement = folderElement.cloneNode(true) as HTMLElement;
 
 		newFolderElement.querySelectorAll('div.nav-folder-title').forEach((el) => {
-			const folder = plugin.app.vault.getAbstractFileByPath(el.getAttribute('data-path') || '');
-			if (!(folder instanceof TFolder)) return;
-
+			const folderItem = plugin.app.vault.getAbstractFileByPath(
+				el.getAttribute('data-path') || '',
+			);
+			if (!(folderItem instanceof TFolder)) return;
 			if (yaml.alwaysCollapse) {
-				folder.collapsed = true;
+				folderItem.collapsed = true;
 				el.classList.add('is-collapsed');
 			} else {
 				if (yaml.storeFolderCondition) {
-					if (folder.collapsed) {
+					if (folderItem.collapsed) {
 						el.classList.add('is-collapsed');
 					} else {
 						el.classList.remove('is-collapsed');
 					}
 				} else {
 					if (el.parentElement?.classList.contains('is-collapsed')) {
-						folder.collapsed = true;
+						folderItem.collapsed = true;
 					} else {
-						folder.collapsed = false;
+						folderItem.collapsed = false;
 					}
 				}
 			}
-
 			if (el.classList.contains('has-folder-note')) {
 				if (plugin instanceof FolderNotesPlugin) {
-					const folderNote = getFolderNote(plugin, folder.path);
+					const folderNote = getFolderNote(plugin, folderItem.path);
 					if (folderNote) { folderOverview.pathBlacklist.push(folderNote.path); }
 				}
 			}
 		});
 
-		const debouncedRenderFileExplorer = this.debounce(() => this.renderFileExplorer(), 300);
+		const DEBOUNCE_DELAY_MS = 300;
+		const debouncedRenderFileExplorer = debounce(
+			() => this.renderFileExplorer(),
+			DEBOUNCE_DELAY_MS,
+		);
 
-		const handleVaultChange = () => {
+		const handleVaultChange = (): void => {
 			debouncedRenderFileExplorer();
 		};
 
@@ -120,26 +139,26 @@ export class FileExplorerOverview {
 
 		newFolderElement.querySelectorAll('div.tree-item-icon').forEach((el) => {
 			if (el instanceof HTMLElement) {
-				el.onclick = () => {
+				el.onclick = (): void => {
 					const path = el.parentElement?.getAttribute('data-path');
 					if (!path) return;
-					const folder = plugin.app.vault.getAbstractFileByPath(path);
-					this.handleCollapseClick(el, plugin, yaml, this.pathBlacklist, sourceFolderPath, folderOverview, folder);
+					const targetFolder = plugin.app.vault.getAbstractFileByPath(path);
+					this.handleCollapseClick(
+						el, plugin, yaml, this.pathBlacklist,
+						sourceFolderPath, folderOverview, targetFolder,
+					);
 				};
 			}
 		});
 	}
 
-	debounce(func: Function, wait: number) {
-		let timeout: number | undefined;
-		return (...args: any[]) => {
-			clearTimeout(timeout);
-			timeout = window.setTimeout(() => func.apply(this, args), wait);
-		};
-	}
-
-	async addFiles(files: TAbstractFile[], childrenElement: HTMLElement, folderOverview: FolderOverview, sourceFolderPath: string) {
-		const plugin = folderOverview.plugin;
+	async addFiles(
+		files: TAbstractFile[],
+		childrenElement: HTMLElement,
+		folderOverview: FolderOverview,
+		sourceFolderPath: string,
+	): Promise<void> {
+		const { plugin } = folderOverview;
 		const allFiles = await filterFiles(
 			files,
 			plugin,
@@ -160,17 +179,26 @@ export class FileExplorerOverview {
 
 		for (const child of folders) {
 			if (!(child instanceof TFolder)) continue;
-			await this.createFolderEL(plugin, child, folderOverview, childrenElement, sourceFolderPath);
+			await this.createFolderEL(
+				plugin, child, folderOverview, childrenElement, sourceFolderPath,
+			);
 		}
 
 		for (const child of otherFiles) {
 			if (!(child instanceof TFile)) continue;
 			await this.createFileEL(plugin, child, folderOverview, childrenElement);
 		}
-
 	}
 
-	async handleCollapseClick(el: HTMLElement, plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, pathBlacklist: string[], sourceFolderPath: string, folderOverview: FolderOverview, folder?: TFolder | undefined | null | TAbstractFile) {
+	async handleCollapseClick(
+		el: HTMLElement,
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		yaml: defaultOverviewSettings,
+		pathBlacklist: string[],
+		sourceFolderPath: string,
+		folderOverview: FolderOverview,
+		folder?: TFolder | undefined | null | TAbstractFile,
+	): Promise<void> {
 		el.classList.toggle('is-collapsed');
 		if (el.classList.contains('is-collapsed')) {
 			if (!(folder instanceof TFolder)) return;
@@ -181,123 +209,200 @@ export class FileExplorerOverview {
 			folder.collapsed = false;
 			const folderElement = el.parentElement?.parentElement;
 			if (!folderElement) return;
-			const childrenElement = folderElement.createDiv({ cls: 'tree-item-children nav-folder-children' });
+			const childrenElement = folderElement.createDiv({
+				cls: 'tree-item-children nav-folder-children',
+			});
 			const files = sortFiles(folder.children, yaml, plugin);
-			const filteredFiles = (await filterFiles(files, plugin, folder.path, yaml.depth || 1, pathBlacklist, yaml, folderOverview.sourceFile) ?? []).filter((file): file is TAbstractFile => file !== null);
+			const filteredFilesResult = await filterFiles(
+				files, plugin, folder.path,
+				yaml.depth || 1, pathBlacklist,
+				yaml, folderOverview.sourceFile,
+			);
+			const filteredFiles = (filteredFilesResult ?? [])
+				.filter((file): file is TAbstractFile => file !== null);
 			await this.addFiles(filteredFiles, childrenElement, folderOverview, sourceFolderPath);
 		}
 	}
 
-	async createFolderEL(plugin: FolderOverviewPlugin | FolderNotesPlugin, child: TFolder, folderOverview: FolderOverview, childrenElement: HTMLElement, sourceFolderPath: string) {
-		const pathBlacklist = folderOverview.pathBlacklist;
-		let folderNote: TFile | null | undefined = undefined;
-		if (plugin instanceof FolderNotesPlugin) {
-			folderNote = getFolderNote(plugin, child.path);
+	async createFolderEL(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		child: TFolder,
+		folderOverview: FolderOverview,
+		childrenElement: HTMLElement,
+		sourceFolderPath: string,
+	): Promise<void> {
+		const folderNote = this.getFolderNoteIfExists(plugin, child);
+		if (folderNote) {
+			folderOverview.pathBlacklist.push(folderNote.path);
 		}
-		const yaml = folderOverview.yaml;
-		let folderTitle: HTMLElement | null = null;
-		let folderElement: HTMLElement | null = null;
 
-		if (folderNote) { pathBlacklist.push(folderNote.path); }
-		let excludedFolder = undefined;
-		if (plugin instanceof FolderNotesPlugin) {
-			excludedFolder = getExcludedFolder(plugin, child.path, true);
+		if (this.shouldExcludeFolder(plugin, child)) {
+			return;
 		}
-		if (excludedFolder?.excludeFromFolderOverview) { return; }
 
-		if (yaml.includeTypes.includes('folder')) {
-			folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
-			folderElement = childrenElement.createDiv({
-				cls: 'tree-item nav-folder',
-			});
+		const { folderElement, folderTitle } = this.createFolderElements(
+			plugin, child, folderOverview, childrenElement, folderNote,
+		);
 
-			folderTitle = folderElement.createDiv({
-				cls: 'tree-item-self is-clickable nav-folder-title',
-				attr: {
-					'data-path': child.path,
-				},
-			});
+		await this.handleFolderChildren(
+			child, folderOverview, folderElement, folderTitle, childrenElement, sourceFolderPath,
+		);
 
-			let folderName = child.name;
-			if (yaml.fmtpIntegration && plugin instanceof FolderNotesPlugin && folderNote) {
-				folderName = await plugin.fmtpHandler?.getNewFileName(folderNote) ?? child.name;
-			}
+		this.setupFolderStyles(folderNote, child, folderTitle, folderOverview.yaml);
+		this.createCollapseIcon(folderTitle, child, plugin, folderOverview, sourceFolderPath);
+	}
 
-			const folderTitleText = folderTitle?.createDiv({
-				cls: 'tree-item-inner nav-folder-title-content',
-				text: folderName,
-			});
+	private getFolderNoteIfExists(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		child: TFolder,
+	): TFile | null | undefined {
+		if (plugin instanceof FolderNotesPlugin) {
+			return getFolderNote(plugin, child.path);
+		}
+		return undefined;
+	}
 
-			if (folderTitleText && !folderNote) {
-				folderTitleText.onclick = () => {
-					const collapseIcon = folderTitle?.querySelectorAll('.tree-item-icon')[0] as HTMLElement;
-					if (collapseIcon) {
-						this.handleCollapseClick(collapseIcon, plugin, yaml, pathBlacklist, sourceFolderPath, folderOverview, child);
-					}
-				};
-			}
+	private shouldExcludeFolder(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		child: TFolder,
+	): boolean {
+		if (plugin instanceof FolderNotesPlugin) {
+			const excludedFolder = getExcludedFolder(plugin, child.path, true);
+			return excludedFolder?.excludeFromFolderOverview ?? false;
+		}
+		return false;
+	}
 
-			if (yaml.allowDragAndDrop) {
-				folderTitle.draggable = true;
-				folderTitle.addEventListener('dragstart', (e) => {
-					const dragManager = plugin.app.dragManager;
-					const dragData = dragManager.dragFolder(e, child);
-					dragManager.onDragStart(e, dragData);
-					folderTitle?.classList.add('is-being-dragged');
-				});
+	private createFolderElements(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		child: TFolder,
+		folderOverview: FolderOverview,
+		childrenElement: HTMLElement,
+		folderNote: TFile | null | undefined,
+	): { folderElement: HTMLElement | null, folderTitle: HTMLElement | null } {
+		const { yaml } = folderOverview;
 
-				folderTitle.addEventListener('dragend', (e) => {
-					folderTitle?.classList.remove('is-being-dragged');
-				});
+		if (!yaml.includeTypes.includes('folder')) {
+			return { folderElement: null, folderTitle: null };
+		}
 
-				folderTitle.addEventListener('dragover', (e) => {
-					e.preventDefault();
-					const { draggable } = plugin.app.dragManager;
-					if (draggable) {
-						folderElement?.classList.add('is-being-dragged-over');
-						plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.name }));
-					}
+		folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
 
-				});
+		const folderElement = childrenElement.createDiv({
+			cls: 'tree-item nav-folder',
+		});
 
-				folderTitle.addEventListener('dragleave', (e) => {
-					folderElement?.classList.remove('is-being-dragged-over');
-				});
+		const folderTitle = folderElement.createDiv({
+			cls: 'tree-item-self is-clickable nav-folder-title',
+			attr: {
+				'data-path': child.path,
+			},
+		});
 
-				folderTitle.addEventListener('drop', (e) => {
-					const { draggable } = plugin.app.dragManager;
-					if (draggable && draggable.file) {
-						plugin.app.fileManager.renameFile(draggable.file, child.path + '/' + draggable.file.name);
-					}
-				});
-			}
+		this.setupFolderTitle(plugin, child, folderOverview, folderTitle, folderNote);
 
-			folderTitle.oncontextmenu = (e) => {
-				folderOverview.folderMenu(child, e);
+		return { folderElement, folderTitle };
+	}
+
+	private async setupFolderTitle(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		child: TFolder,
+		folderOverview: FolderOverview,
+		folderTitle: HTMLElement,
+		folderNote: TFile | null | undefined,
+	): Promise<void> {
+		const { yaml, pathBlacklist } = folderOverview;
+
+		let folderName = child.name;
+		if (yaml.fmtpIntegration && plugin instanceof FolderNotesPlugin && folderNote) {
+			folderName = await plugin.fmtpHandler?.getNewFileName(folderNote) ?? child.name;
+		}
+
+		const folderTitleText = folderTitle.createDiv({
+			cls: 'tree-item-inner nav-folder-title-content',
+			text: folderName,
+		});
+
+		if (!folderNote) {
+			folderTitleText.onclick = (): void => {
+				const collapseIcon = folderTitle.querySelectorAll('.tree-item-icon')[0];
+				if (collapseIcon) {
+					this.handleCollapseClick(
+						collapseIcon as HTMLElement, plugin, yaml, pathBlacklist,
+						'', folderOverview, child,
+					);
+				}
 			};
 		}
+
+		if (yaml.allowDragAndDrop) {
+			this.handleDragAndDrop(folderTitle, folderTitle.parentElement as HTMLElement, child);
+		}
+
+		folderTitle.oncontextmenu = (e): void => {
+			folderOverview.folderMenu(child, e);
+		};
+	}
+
+	private async handleFolderChildren(
+		child: TFolder,
+		folderOverview: FolderOverview,
+		folderElement: HTMLElement | null,
+		folderTitle: HTMLElement | null,
+		childrenElement: HTMLElement,
+		sourceFolderPath: string,
+	): Promise<void> {
+		const { yaml } = folderOverview;
 
 		if (!child.collapsed || !yaml.includeTypes.includes('folder')) {
 			if (yaml.alwaysCollapse) {
 				child.collapsed = true;
 			}
+
 			if (yaml.includeTypes.includes('folder')) {
 				folderTitle?.classList.remove('is-collapsed');
-				const childrenElement = folderElement?.createDiv({ cls: 'tree-item-children nav-folder-children' });
-				if (childrenElement) {
-					await this.addFiles(child.children, childrenElement, folderOverview, sourceFolderPath);
+				const folderChildren = folderElement?.createDiv({
+					cls: 'tree-item-children nav-folder-children',
+				});
+				if (folderChildren) {
+					await this.addFiles(
+						child.children, folderChildren, folderOverview, sourceFolderPath,
+					);
 				}
 			} else {
-				await this.addFiles(child.children, childrenElement, folderOverview, sourceFolderPath);
+				await this.addFiles(
+					child.children, childrenElement, folderOverview, sourceFolderPath,
+				);
 			}
 		} else {
 			folderTitle?.classList.add('is-collapsed');
 		}
+	}
 
-		if (folderNote) { folderTitle?.classList.add('has-folder-note'); }
-		if (folderNote && child.children.length === 1 && yaml.disableCollapseIcon) { folderTitle?.classList.add('fn-has-no-files'); }
+	private setupFolderStyles(
+		folderNote: TFile | null | undefined,
+		child: TFolder,
+		folderTitle: HTMLElement | null,
+		yaml: defaultOverviewSettings,
+	): void {
+		if (folderNote) {
+			folderTitle?.classList.add('has-folder-note');
+		}
 
+		if (folderNote && child.children.length === 1 && yaml.disableCollapseIcon) {
+			folderTitle?.classList.add('fn-has-no-files');
+		}
+	}
+
+	private createCollapseIcon(
+		folderTitle: HTMLElement | null,
+		child: TFolder,
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		folderOverview: FolderOverview,
+		sourceFolderPath: string,
+	): void {
 		const collapseIcon = folderTitle?.createDiv({
+			// eslint-disable-next-line max-len
 			cls: 'tree-item-icon collapse-icon nav-folder-collapse-indicator fn-folder-overview-collapse-icon',
 		});
 
@@ -308,15 +413,65 @@ export class FileExplorerOverview {
 		if (collapseIcon) {
 			setIcon(collapseIcon, 'chevron-down');
 			collapseIcon.querySelector('path')?.setAttribute('d', 'M3 8L12 17L21 8');
-			collapseIcon.onclick = () => {
-				this.handleCollapseClick(collapseIcon, plugin, yaml, pathBlacklist, sourceFolderPath, folderOverview, child);
+			collapseIcon.onclick = (): void => {
+				this.handleCollapseClick(
+					collapseIcon, plugin, folderOverview.yaml, folderOverview.pathBlacklist,
+					sourceFolderPath, folderOverview, child,
+				);
 			};
 		}
 	}
 
-	async createFileEL(plugin: FolderOverviewPlugin | FolderNotesPlugin, child: TFile, folderOverview: FolderOverview, childrenElement: HTMLElement) {
-		const yaml = folderOverview.yaml;
-		const pathBlacklist = folderOverview.pathBlacklist;
+	handleDragAndDrop(
+		folderTitle: HTMLElement,
+		folderElement: HTMLElement | null,
+		child: TFolder,
+	): void {
+		folderTitle.draggable = true;
+		folderTitle.addEventListener('dragstart', (e) => {
+			const { dragManager } = this.plugin.app;
+			const dragData = dragManager.dragFolder(e, child);
+			dragManager.onDragStart(e, dragData);
+			folderTitle?.classList.add('is-being-dragged');
+		});
+
+		folderTitle.addEventListener('dragend', () => {
+			folderTitle?.classList.remove('is-being-dragged');
+		});
+
+		folderTitle.addEventListener('dragover', (e) => {
+			e.preventDefault();
+			const { draggable } = this.plugin.app.dragManager;
+			if (draggable) {
+				folderElement?.classList.add('is-being-dragged-over');
+				this.plugin.app.dragManager.setAction(
+					window.i18next.t('interface.drag-and-drop.move-into-folder',
+						{ folder: child.name }),
+				);
+			}
+		});
+
+		folderTitle.addEventListener('dragleave', () => {
+			folderElement?.classList.remove('is-being-dragged-over');
+		});
+
+		folderTitle.addEventListener('drop', () => {
+			const { draggable } = this.plugin.app.dragManager;
+			if (draggable && draggable.file) {
+				const newPath = child.path + '/' + draggable.file.name;
+				this.plugin.app.fileManager.renameFile(draggable.file, newPath);
+			}
+		});
+	}
+
+	async createFileEL(
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		child: TFile,
+		folderOverview: FolderOverview,
+		childrenElement: HTMLElement,
+	): Promise<void> {
+		const { yaml } = folderOverview;
+		const { pathBlacklist } = folderOverview;
 
 		if (pathBlacklist.includes(child.path) && !yaml.showFolderNotes) { return; }
 
@@ -350,9 +505,13 @@ export class FileExplorerOverview {
 				e.preventDefault();
 				const { draggable } = plugin.app.dragManager;
 				if (draggable) {
-					plugin.app.dragManager.setAction(window.i18next.t('interface.drag-and-drop.move-into-folder', { folder: child.parent?.name || plugin.app.vault.getName() }));
-					fileElement.parentElement?.parentElement?.classList.add('is-being-dragged-over');
-
+					const folderName = child.parent?.name || plugin.app.vault.getName();
+					plugin.app.dragManager.setAction(
+						window.i18next.t('interface.drag-and-drop.move-into-folder',
+							{ folder: folderName }),
+					);
+					fileElement.parentElement?.parentElement?.classList
+						.add('is-being-dragged-over');
 				}
 			});
 
@@ -366,18 +525,20 @@ export class FileExplorerOverview {
 				if (draggable?.file) {
 					const targetFolder = child.parent?.path || '';
 					if (targetFolder) {
-						plugin.app.fileManager.renameFile(draggable.file, `${targetFolder}/${draggable.file.name}`);
+						const newPath = `${targetFolder}/${draggable.file.name}`;
+						plugin.app.fileManager.renameFile(draggable.file, newPath);
 					}
-					fileElement.parentElement?.parentElement?.classList.remove('is-being-dragged-over');
+					fileElement.parentElement?.parentElement?.classList
+						.remove('is-being-dragged-over');
 				}
 			});
 		}
 
-		fileTitle.onclick = () => {
+		fileTitle.onclick = (): void => {
 			plugin.app.workspace.openLinkText(child.path, child.path, true);
 		};
 
-		fileTitle.oncontextmenu = (e) => {
+		fileTitle.oncontextmenu = (e): void => {
 			folderOverview.fileMenu(child, e);
 		};
 

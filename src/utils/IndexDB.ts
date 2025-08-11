@@ -1,6 +1,6 @@
-import { Notice, TFile } from 'obsidian';
-import FolderOverviewPlugin from '../main';
-import FolderNotesPlugin from '../../../main';
+import { type TFile, Notice } from 'obsidian';
+import type FolderOverviewPlugin from '../main';
+import type FolderNotesPlugin from '../../../main';
 import { hasOverviewYaml } from '../FolderOverview';
 
 export class FvIndexDB {
@@ -16,11 +16,11 @@ export class FvIndexDB {
 		this.plugin = plugin;
 	}
 
-	init(showNotice: boolean) {
+	init(showNotice: boolean): void {
 		this.active = true;
 		const openRequest = indexedDB.open(this.name, this.version);
 
-		openRequest.onupgradeneeded = (event) => {
+		openRequest.onupgradeneeded = (event): void => {
 			const target = event.target as IDBOpenDBRequest | null;
 			if (!target) return;
 			const db = target.result;
@@ -31,33 +31,33 @@ export class FvIndexDB {
 			this.indexFiles(showNotice);
 		};
 
-		openRequest.onsuccess = (event) => {
+		openRequest.onsuccess = (event): void => {
 			const target = event.target as IDBOpenDBRequest | null;
 			if (!target) return;
 			this.indexDB = target.result;
-			openRequest.onblocked = (event) => {
-				console.warn('IndexedDB is blocked:', event);
+			openRequest.onblocked = (blockedEvent): void => {
+				console.warn('IndexedDB is blocked:', blockedEvent);
 			};
-			this.indexDB.onclose = () => {
+			this.indexDB.onclose = (): void => {
 				this.indexDB = null;
 			};
 			this.resetDatabase();
 			this.indexFiles(showNotice);
 		};
 
-		openRequest.onerror = (event) => {
+		openRequest.onerror = (event): void => {
 			const target = event.target as IDBOpenDBRequest | null;
 			const error = target?.error;
 			if (error && error.name === 'VersionError') {
 				const deleteRequest = indexedDB.deleteDatabase(this.name);
-				deleteRequest.onsuccess = () => {
+				deleteRequest.onsuccess = (): void => {
 					this.init(showNotice);
 				};
 			}
 		};
 	}
 
-	async indexFiles(showNotice: boolean) {
+	async indexFiles(showNotice: boolean): Promise<void> {
 		if (showNotice) new Notice('Indexing files for folder overview plugin...');
 		const files = this.plugin.app.vault.getMarkdownFiles();
 		for (const file of files) {
@@ -67,14 +67,14 @@ export class FvIndexDB {
 		if (showNotice) new Notice('Indexed files for folder overview plugin.');
 	}
 
-	addNote(note: TFile) {
+	addNote(note: TFile): void {
 		if (!this.active || !this.indexDB) return;
 		const transaction = this.indexDB.transaction([this.storeName], 'readwrite');
 		const store = transaction.objectStore(this.storeName);
 		store.put({ sourcePath: note.path });
 	}
 
-	removeNote(notePath: string) {
+	removeNote(notePath: string): void {
 		if (!this.active || !this.indexDB) return;
 		const transaction = this.indexDB.transaction([this.storeName], 'readwrite');
 		const store = transaction.objectStore(this.storeName);
@@ -89,12 +89,12 @@ export class FvIndexDB {
 			const store = transaction.objectStore(this.storeName);
 			const request = store.get(path);
 
-			request.onsuccess = (event) => {
+			request.onsuccess = (event): void => {
 				const target = event.target as IDBRequest | null;
 				resolve(target?.result ?? null);
 			};
 
-			request.onerror = (event) => {
+			request.onerror = (event): void => {
 				reject(event);
 			};
 		});
@@ -108,19 +108,19 @@ export class FvIndexDB {
 			const store = transaction.objectStore(this.storeName);
 			const request = store.getAll();
 
-			request.onsuccess = (event) => {
+			request.onsuccess = (event): void => {
 				const target = event.target as IDBRequest | null;
 				const result = target?.result ?? [];
 				resolve(result.map((data: { sourcePath: string }) => data.sourcePath));
 			};
 
-			request.onerror = (event) => {
+			request.onerror = (event): void => {
 				reject(event);
 			};
 		});
 	}
 
-	resetDatabase() {
+	resetDatabase(): void {
 		if (!this.indexDB) return;
 		const transaction = this.indexDB.transaction([this.storeName], 'readwrite');
 		const store = transaction.objectStore(this.storeName);

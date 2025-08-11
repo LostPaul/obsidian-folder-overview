@@ -1,8 +1,9 @@
-import FolderNotesPlugin from '../../main';
+import type FolderNotesPlugin from '../../main';
+import { type defaultOverviewSettings } from './FolderOverview';
 import FolderOverviewPlugin from './main';
-import { Menu, Editor, MarkdownView, stringifyYaml, Notice } from 'obsidian';
+import { stringifyYaml, Notice, type Menu, type Editor, type MarkdownView } from 'obsidian';
 
-export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNotesPlugin) {
+export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNotesPlugin): void {
 	plugin.addCommand({
 		id: 'open-folder-overview-settings',
 		name: 'Edit folder overview',
@@ -27,55 +28,69 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 		},
 	});
 
-	plugin.registerEvent(plugin.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
-		const line = editor.getCursor().line;
-		const lineText = editor.getLine(line);
-		if (lineText.trim() === '' || lineText.trim() === '>') {
-			menu.addItem((item) => {
-				item.setTitle('Insert folder overview')
-					.setIcon('edit')
-					.onClick(() => {
-						if ((plugin.settings as any).firstTimeInsertOverview) {
-							(plugin.settings as any).firstTimeInsertOverview = false;
-							plugin.saveSettings();
-							const frag = document.createDocumentFragment();
-							const text = document.createTextNode('You can edit the overview using the "Edit folder overview" command from the command palette. To find more about folder overview, check the plugin documentation: ');
-							const link = document.createElement('a');
-							link.href = 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/';
-							link.textContent = 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/';
-							frag.appendChild(text);
-							frag.appendChild(link);
-							new Notice(frag);
-						}
-						insertOverview(editor, plugin);
-					});
-			});
-		}
-	}));
+	plugin.registerEvent(
+		// eslint-disable-next-line max-len
+		plugin.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, _view: MarkdownView) => {
+			const { line } = editor.getCursor();
+			const lineText = editor.getLine(line);
+			if (lineText.trim() === '' || lineText.trim() === '>') {
+				menu.addItem((item) => {
+					item.setTitle('Insert folder overview')
+						.setIcon('edit')
+						.onClick(() => {
+							// @ts-expect-error - this is a workaround for the first time insert overview
+							if (plugin.settings.firstTimeInsertOverview) {
+								// @ts-expect-error - this is a workaround for the first time insert overview
+								plugin.settings.firstTimeInsertOverview = false;
+								plugin.saveSettings();
+								const frag = document.createDocumentFragment();
+								const text = document.createTextNode(
+									// eslint-disable-next-line max-len
+									'You can edit the overview using the "Edit folder overview" command from the command palette. To find more about folder overview, check the plugin documentation: ',
+								);
+								const link = document.createElement('a');
+								// eslint-disable-next-line max-len
+								link.href = 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/';
+								// eslint-disable-next-line max-len
+								link.textContent = 'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/';
+								frag.appendChild(text);
+								frag.appendChild(link);
+								new Notice(frag);
+							}
+							insertOverview(editor, plugin);
+						});
+				});
+			}
+		},
+		),
+	);
 }
 
-function insertOverview(editor: Editor, plugin: FolderOverviewPlugin | FolderNotesPlugin) {
-	const line = editor.getCursor().line;
-	const lineText = editor.getLine(line);
-	const json = Object.assign({}, plugin instanceof FolderOverviewPlugin ? plugin.settings.defaultOverviewSettings : plugin.settings.defaultOverview);
+function insertOverview(
+	editor: Editor,
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+): void {
+	const { line: cursorLine } = editor.getCursor();
+	const currentLineText = editor.getLine(cursorLine);
+
+	const json = getDefaultOverviewJson(plugin);
 	json.id = crypto.randomUUID();
+
 	const yaml = stringifyYaml(json);
-	let overviewBlock = `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
-	if (plugin instanceof FolderOverviewPlugin && plugin.settings.defaultOverviewSettings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
-		overviewBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+	let overviewBlock = getOverviewBlock(yaml);
+
+	if (shouldUseActualLinks(plugin)) {
+		overviewBlock = addLinkSpans(overviewBlock, json.id);
 	}
 
-	if (lineText.trim() === '') {
+	if (currentLineText.trim() === '') {
 		editor.replaceSelection(overviewBlock);
-	} else if (lineText.trim() === '>') {
-		// add > to the beginning of each line
-		const lines = yaml.split('\n');
-		const newLines = lines.map((line) => {
-			return `> ${line}`;
-		});
-		let quotedBlock = `\`\`\`folder-overview\n${newLines.join('\n')}\`\`\`\n`;
-		if (plugin instanceof FolderOverviewPlugin && plugin.settings.defaultOverviewSettings.useActualLinks || plugin instanceof FolderNotesPlugin && plugin.settings.defaultOverview.useActualLinks) {
-			quotedBlock = `${overviewBlock}<span class="fv-link-list-start" id="${json.id}"></span>\n<span class="fv-link-list-end" id="${json.id}"></span>\n`;
+	} else if (currentLineText.trim() === '>') {
+		const yamlLines = yaml.split('\n');
+		const quotedLines = yamlLines.map((yamlLine) => `> ${yamlLine}`);
+		let quotedBlock = `\`\`\`folder-overview\n${quotedLines.join('\n')}\`\`\`\n`;
+		if (shouldUseActualLinks(plugin)) {
+			quotedBlock = addLinkSpans(quotedBlock, json.id);
 		}
 		editor.replaceSelection(quotedBlock);
 	}
@@ -86,4 +101,34 @@ function insertOverview(editor: Editor, plugin: FolderOverviewPlugin | FolderNot
 			plugin.fvIndexDB.addNote(activeFile);
 		}
 	}
+}
+
+function getDefaultOverviewJson(
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+): defaultOverviewSettings {
+	const isOverviewPlugin = plugin instanceof FolderOverviewPlugin;
+	const defaultSettings = isOverviewPlugin
+		? plugin.settings.defaultOverviewSettings
+		: plugin.settings.defaultOverview;
+	return Object.assign({}, defaultSettings);
+}
+
+function shouldUseActualLinks(
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+): boolean {
+	if (plugin instanceof FolderOverviewPlugin) {
+		return plugin.settings.defaultOverviewSettings.useActualLinks;
+	}
+	return plugin.settings.defaultOverview.useActualLinks;
+}
+
+function getOverviewBlock(yaml: string): string {
+	return `\`\`\`folder-overview\n${yaml}\`\`\`\n`;
+}
+
+function addLinkSpans(block: string, id: string): string {
+	return (
+		`${block}<span class="fv-link-list-start" id="${id}"></span>\n` +
+		`<span class="fv-link-list-end" id="${id}"></span>\n`
+	);
 }

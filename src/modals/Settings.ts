@@ -1,5 +1,11 @@
-import { App, Modal, MarkdownPostProcessorContext, TFile, SettingTab } from 'obsidian';
-import { defaultOverviewSettings, includeTypes, updateYaml } from '../FolderOverview';
+import {
+	Modal,
+	type App,
+	type MarkdownPostProcessorContext,
+	type TFile,
+	type SettingTab,
+} from 'obsidian';
+import { updateYaml, type defaultOverviewSettings, type includeTypes } from '../FolderOverview';
 import { getFolderPathFromString } from '../utils/functions';
 import { createOverviewSettings } from '../settings';
 import FolderOverviewPlugin from '../main';
@@ -11,15 +17,39 @@ export class FolderOverviewSettings extends Modal {
 	ctx: MarkdownPostProcessorContext;
 	el: HTMLElement;
 	defaultSettings: defaultOverviewSettings;
-	constructor(app: App, plugin: FolderOverviewPlugin | FolderNotesPlugin, yaml: defaultOverviewSettings, ctx: MarkdownPostProcessorContext | null, el: HTMLElement | null, defaultSettings: defaultOverviewSettings) {
+	constructor(
+		app: App,
+		plugin: FolderOverviewPlugin | FolderNotesPlugin,
+		yaml: defaultOverviewSettings,
+		ctx: MarkdownPostProcessorContext,
+		el: HTMLElement,
+		defaultSettings: defaultOverviewSettings,
+	) {
 		super(app);
 		this.plugin = plugin;
 		this.app = app;
+		this.defaultSettings = defaultSettings;
+		this.yaml = this.initializeYaml(yaml, ctx, defaultSettings);
+		this.ctx = ctx ?? undefined;
+		this.el = el ?? undefined;
+		updateYaml(this.plugin, this.ctx, this.el, this.yaml, false);
+	}
+
+	// eslint-disable-next-line complexity
+	private initializeYaml(
+		yaml: defaultOverviewSettings,
+		ctx: MarkdownPostProcessorContext | undefined,
+		defaultSettings: defaultOverviewSettings,
+	): defaultOverviewSettings {
 		if (!yaml) {
-			this.yaml = this.defaultSettings;
-		} else if (ctx) {
-			const includeTypes = yaml?.includeTypes || defaultSettings.includeTypes || ['folder', 'markdown'];
-			this.yaml = {
+			return this.defaultSettings;
+		}
+		if (ctx) {
+			const includeTypes =
+				yaml?.includeTypes ||
+				defaultSettings.includeTypes ||
+				['folder', 'markdown'];
+			return {
 				id: yaml?.id ?? crypto.randomUUID(),
 				folderPath: yaml?.folderPath ?? getFolderPathFromString(ctx.sourcePath),
 				title: yaml?.title ?? defaultSettings.title,
@@ -31,9 +61,12 @@ export class FolderOverviewSettings extends Modal {
 				sortBy: yaml?.sortBy ?? defaultSettings.sortBy,
 				sortByAsc: yaml?.sortByAsc ?? defaultSettings.sortByAsc,
 				showEmptyFolders: yaml?.showEmptyFolders ?? defaultSettings.showEmptyFolders,
+				// eslint-disable-next-line max-len
 				onlyIncludeSubfolders: yaml?.onlyIncludeSubfolders ?? defaultSettings.onlyIncludeSubfolders,
+				// eslint-disable-next-line max-len
 				storeFolderCondition: yaml?.storeFolderCondition ?? defaultSettings.storeFolderCondition,
 				showFolderNotes: yaml?.showFolderNotes ?? defaultSettings.showFolderNotes,
+				// eslint-disable-next-line max-len
 				disableCollapseIcon: yaml?.disableCollapseIcon ?? defaultSettings.disableCollapseIcon,
 				alwaysCollapse: yaml?.alwaysCollapse ?? defaultSettings.alwaysCollapse,
 				autoSync: yaml?.autoSync ?? defaultSettings.autoSync,
@@ -46,19 +79,20 @@ export class FolderOverviewSettings extends Modal {
 				isInCallout: yaml?.isInCallout ?? false,
 			};
 		}
-		if (ctx) {
-			this.ctx = ctx;
-		}
-		if (el) {
-			this.el = el;
-		}
-
-		updateYaml(this.plugin, this.ctx, this.el, this.yaml, false);
+		return yaml;
 	}
 
-	onOpen() {
+	onOpen(): void {
 		const { contentEl } = this;
-		this.display(contentEl, this.yaml, this.plugin, this.defaultSettings, this.display, this.el, this.ctx);
+		this.display(
+			contentEl,
+			this.yaml,
+			this.plugin,
+			this.defaultSettings,
+			this.display,
+			this.el,
+			this.ctx,
+		);
 	}
 
 	display(contentEl: HTMLElement,
@@ -71,7 +105,7 @@ export class FolderOverviewSettings extends Modal {
 		file?: TFile | null,
 		settingsTab?: SettingTab,
 		modal?: FolderOverviewSettings,
-		changedSection?: string) {
+		changedSection?: string): void {
 		modal = this ?? modal;
 		contentEl.empty();
 		// close when user presses enter
@@ -87,10 +121,13 @@ export class FolderOverviewSettings extends Modal {
 			contentEl.createEl('h2', { text: 'Default folder overview settings' });
 		}
 
-		createOverviewSettings(contentEl, yaml, plugin, defaultSettings, display, el, ctx, undefined, undefined, modal, changedSection);
+		createOverviewSettings(
+			contentEl, yaml, plugin, defaultSettings, display, el, ctx,
+			undefined, undefined, modal, changedSection,
+		);
 	}
 
-	onClose() {
+	onClose(): void {
 		this.plugin.updateOverviewView(this.plugin, this.yaml);
 		const { contentEl } = this;
 		contentEl.empty();
