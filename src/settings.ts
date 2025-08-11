@@ -11,13 +11,13 @@ import {
 } from './FolderOverview';
 import { FolderSuggest } from './suggesters/FolderSuggester';
 import { ListComponent } from './utils/ListComponent';
-import { FolderOverviewSettings } from './modals/Settings';
-import FolderOverviewPlugin from './main';
+import { type FolderOverviewSettings } from './modals/Settings';
+import type FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 import { updateYamlById } from './utils/functions';
 
 
-export type globalSettings = {
+export interface globalSettings {
 	autoUpdateLinks: boolean;
 }
 
@@ -52,10 +52,10 @@ export const GLOBAL_SETTINGS: globalSettings = {
 	autoUpdateLinks: false,
 };
 
-export type defaultSettings = {
+export interface defaultSettings {
 	defaultOverviewSettings: defaultOverviewSettings;
 	globalSettings: globalSettings;
-};
+}
 
 export const DEFAULT_SETTINGS = {
 	defaultOverviewSettings: OVERVIEW_SETTINGS,
@@ -93,7 +93,7 @@ export class SettingsTab extends PluginSettingTab {
 						} else {
 							this.plugin.fvIndexDB.active = false;
 						}
-					})
+					}),
 			);
 
 		containerEl.createEl('h3', { text: 'Overviews default settings' });
@@ -136,9 +136,8 @@ const createOrReplaceSetting = (
 			sectionContainer.empty();
 			renderSetting(sectionContainer as HTMLElement);
 			return;
-		} else {
-			return;
 		}
+		return;
 	}
 
 	sectionContainer = container.createDiv({
@@ -252,7 +251,7 @@ export async function createOverviewSettings(
 							'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#title',
 					});
 					link.target = '_blank';
-				})
+				}),
 			)
 			.addText((text) =>
 				text
@@ -312,7 +311,7 @@ export async function createOverviewSettings(
 							'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#folder-path',
 					});
 					link.target = '_blank';
-				})
+				}),
 			)
 			.addSearch((search) => {
 				new FolderSuggest(search.inputEl, plugin, false);

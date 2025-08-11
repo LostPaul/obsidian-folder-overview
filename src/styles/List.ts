@@ -5,7 +5,7 @@ import {
 	type FolderOverview, type defaultOverviewSettings,
 } from '../FolderOverview';
 import { getFolderPathFromString } from '../../../functions/utils';
-import FolderOverviewPlugin from '../main';
+import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 
 export async function renderListOverview(
@@ -180,13 +180,13 @@ async function goThroughFolders(
 	const files = sortFiles(
 		allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null),
 		yaml,
-		plugin
+		plugin,
 	);
 
 	const folders = sortFiles(
 		allFiles.filter((file): file is TFolder => (file instanceof TFolder) && file !== null),
 		yaml,
-		plugin
+		plugin,
 	);
 	const ul = list.createEl('ul', { cls: 'folder-overview-list' });
 

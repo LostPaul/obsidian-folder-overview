@@ -22,9 +22,8 @@ export function getFolderPathFromString(path: string): string {
 	const folderPath = path.substring(0, subString);
 	if (folderPath === '') {
 		return '/';
-	} else {
-		return folderPath;
 	}
+	return folderPath;
 }
 
 const CODE_BLOCK_END_NOT_FOUND = -1;
