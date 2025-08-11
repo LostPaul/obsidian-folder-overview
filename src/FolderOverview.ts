@@ -83,7 +83,7 @@ export class FolderOverview {
 	defaultSettings: defaultOverviewSettings;
 	sourceFile: TFile | undefined;
 	counter = 0;
-	// eslint-disable-next-line no-magic-numbers
+
 	LINK_LIST_UPDATE_DELAY_MS = 1000;
 
 	eventListeners: (() => void)[] = [];

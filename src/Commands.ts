@@ -38,10 +38,8 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 					item.setTitle('Insert folder overview')
 						.setIcon('edit')
 						.onClick(() => {
-							// eslint-disable-next-line max-len
 							// @ts-expect-error - this is a workaround for the first time insert overview
 							if (plugin.settings.firstTimeInsertOverview) {
-								// eslint-disable-next-line max-len
 								// @ts-expect-error - this is a workaround for the first time insert overview
 								plugin.settings.firstTimeInsertOverview = false;
 								plugin.saveSettings();
