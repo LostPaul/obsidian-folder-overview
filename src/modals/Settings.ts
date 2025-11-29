@@ -77,7 +77,7 @@ export class FolderOverviewSettings extends Modal {
 				fmtpIntegration: yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
 				titleSize: yaml?.titleSize ?? defaultSettings.titleSize,
 				isInCallout: yaml?.isInCallout ?? false,
-				useWikilinks: yaml?.useWikilinks ?? defaultSettings.useWikilinks,
+				useWikilinks: yaml?.useWikilinks ?? defaultSettings.useWikilinks ?? true,
 			};
 		}
 		return yaml;

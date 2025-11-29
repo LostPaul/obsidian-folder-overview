@@ -169,7 +169,7 @@ export function buildYamlConfig(
 			yaml?.fmtpIntegration ?? defaultSettings.fmtpIntegration,
 		titleSize: yaml?.titleSize ?? defaultSettings.titleSize,
 		isInCallout: yaml?.isInCallout ?? false,
-		useWikilinks: yaml?.useWikilinks ?? defaultSettings.useWikilinks,
+		useWikilinks: yaml?.useWikilinks ?? defaultSettings.useWikilinks ?? true,
 	};
 }
 
