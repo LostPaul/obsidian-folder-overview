@@ -16,10 +16,9 @@ import { FileExplorerOverview } from './styles/FileExplorer';
 import { renderListOverview } from './styles/List';
 import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
-import FolderOverviewPlugin from './main';
+import type FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 import { getFolder } from '../../functions/folderNoteFunctions';
-import { CardsOverview } from './styles/Cards';
 import { removeLinkList, updateLinkList } from './utils/LinkList';
 import {
 	buildYamlConfig,
@@ -40,7 +39,7 @@ export type includeTypes =
 	| 'video'
 	| 'all';
 
-export type defaultOverviewSettings = {
+export interface defaultOverviewSettings {
 	id: string;
 	folderPath: string;
 	title: string;
@@ -65,7 +64,8 @@ export type defaultOverviewSettings = {
 	fmtpIntegration: boolean;
 	titleSize: number;
 	isInCallout: boolean;
-};
+	useWikilinks: boolean;
+}
 
 export class FolderOverview {
 	emitter: CustomEventEmitter;

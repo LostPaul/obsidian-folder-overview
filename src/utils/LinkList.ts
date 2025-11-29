@@ -113,7 +113,12 @@ function buildFileLinkListLine(
 	indentStr: string,
 ): string {
 	const prefix = yaml.isInCallout ? '> ' : '';
-	const base = `${prefix}${indentStr}- [[${item.path}|${item.basename}]]`;
+	let base: string;
+	if (yaml.useWikilinks) {
+		base = `${prefix}${indentStr}- [[${item.path}|${item.basename}]]`;
+	} else {
+		base = `${prefix}${indentStr}- [${item.basename}](${encodeURI(item.path)})`;
+	}
 	if (yaml.hideLinkList) {
 		return (
 			base +
@@ -142,7 +147,11 @@ async function buildFolderLinkListLines(
 	}
 
 	if (folderNote) {
-		line = `${prefix}${indentStr}- [[${folderNote.path}|${item.name}]]`;
+		if (yaml.useWikilinks) {
+			line = `${prefix}${indentStr}- [[${folderNote.path}|${item.name}]]`;
+		} else {
+			line = `${prefix}${indentStr}- [${item.name}](${encodeURI(folderNote.path)})`;
+		}	
 	}
 
 	if (yaml.hideLinkList) {

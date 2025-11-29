@@ -1,4 +1,4 @@
-import {
+﻿import {
 	normalizePath, PluginSettingTab,
 	Setting, TFolder,
 	type MarkdownPostProcessorContext,
@@ -11,13 +11,13 @@ import {
 } from './FolderOverview';
 import { FolderSuggest } from './suggesters/FolderSuggester';
 import { ListComponent } from './utils/ListComponent';
-import { FolderOverviewSettings } from './modals/Settings';
-import FolderOverviewPlugin from './main';
+import { type FolderOverviewSettings } from './modals/Settings';
+import type FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
 import { updateYamlById } from './utils/functions';
 
 
-export type globalSettings = {
+export interface globalSettings {
 	autoUpdateLinks: boolean;
 }
 
@@ -46,16 +46,17 @@ export const OVERVIEW_SETTINGS: defaultOverviewSettings = {
 	fmtpIntegration: false,
 	titleSize: 1,
 	isInCallout: false,
+	useWikilinks: true,
 };
 
 export const GLOBAL_SETTINGS: globalSettings = {
 	autoUpdateLinks: false,
 };
 
-export type defaultSettings = {
+export interface defaultSettings {
 	defaultOverviewSettings: defaultOverviewSettings;
 	globalSettings: globalSettings;
-};
+}
 
 export const DEFAULT_SETTINGS = {
 	defaultOverviewSettings: OVERVIEW_SETTINGS,
@@ -93,7 +94,7 @@ export class SettingsTab extends PluginSettingTab {
 						} else {
 							this.plugin.fvIndexDB.active = false;
 						}
-					})
+					}),
 			);
 
 		containerEl.createEl('h3', { text: 'Overviews default settings' });
@@ -136,9 +137,8 @@ const createOrReplaceSetting = (
 			sectionContainer.empty();
 			renderSetting(sectionContainer as HTMLElement);
 			return;
-		} else {
-			return;
 		}
+		return;
 	}
 
 	sectionContainer = container.createDiv({
@@ -252,7 +252,7 @@ export async function createOverviewSettings(
 							'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#title',
 					});
 					link.target = '_blank';
-				})
+				}),
 			)
 			.addText((text) =>
 				text
@@ -312,7 +312,7 @@ export async function createOverviewSettings(
 							'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#folder-path',
 					});
 					link.target = '_blank';
-				})
+				}),
 			)
 			.addSearch((search) => {
 				new FolderSuggest(search.inputEl, plugin, false);
@@ -363,6 +363,30 @@ export async function createOverviewSettings(
 							yaml.useActualLinks,
 							defaultSettings,
 							el, ctx, file,
+						);
+						refresh(
+							contentEl, yaml,
+							plugin, defaultSettings,
+							display, el, ctx,
+							file, settingsTab, modal,
+						);
+					}),
+			);
+	});
+
+	createOrReplaceSetting(contentEl, 'use-wikilinks', changedSection, (settingEl) => {
+		new Setting(settingEl)
+			.setName('Use wikilinks')
+			.setDesc('Choose if the links in the link list should be in wikilink format or markdown link format (e.g., [[link]] vs [link](url)).')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(yaml.useWikilinks)
+					.onChange(async (value) => {
+						yaml.useWikilinks = value;
+						updateSettings(
+							contentEl, yaml, plugin,
+							false, defaultSettings, el,
+							ctx, file,
 						);
 						refresh(
 							contentEl, yaml,
@@ -777,6 +801,7 @@ function determineVisibleSections(
 		'setting-allow-drag-and-drop': yaml.style === 'explorer',
 		'setting-hide-folder-overview': !yaml.hideLinkList && yaml.useActualLinks,
 		'setting-hide-link-list': !yaml.hideFolderOverview && yaml.useActualLinks,
+		'setting-use-wikilinks': yaml.useActualLinks,
 		'setting-fmtp-integration': !!plugin.app.plugins.getPlugin(
 			'obsidian-front-matter-title-plugin',
 		),
