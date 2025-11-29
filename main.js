@@ -7545,7 +7545,7 @@ async function updateAllOverviews(plugin) {
   });
 }
 function buildYamlConfig(yaml, defaultSettings, ctx, includeTypesParam) {
-  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z;
   return {
     id: (_a = yaml == null ? void 0 : yaml.id) != null ? _a : crypto.randomUUID(),
     folderPath: (_c = (_b = yaml == null ? void 0 : yaml.folderPath) == null ? void 0 : _b.trim()) != null ? _c : getFolderPathFromString2(ctx.sourcePath),
@@ -7571,7 +7571,7 @@ function buildYamlConfig(yaml, defaultSettings, ctx, includeTypesParam) {
     fmtpIntegration: (_v = yaml == null ? void 0 : yaml.fmtpIntegration) != null ? _v : defaultSettings.fmtpIntegration,
     titleSize: (_w = yaml == null ? void 0 : yaml.titleSize) != null ? _w : defaultSettings.titleSize,
     isInCallout: (_x = yaml == null ? void 0 : yaml.isInCallout) != null ? _x : false,
-    useWikilinks: (_y = yaml == null ? void 0 : yaml.useWikilinks) != null ? _y : defaultSettings.useWikilinks
+    useWikilinks: (_z = (_y = yaml == null ? void 0 : yaml.useWikilinks) != null ? _y : defaultSettings.useWikilinks) != null ? _z : true
   };
 }
 async function updateYamlById(plugin, overviewId, file, newYaml, addLinkList, isCallout = false) {
@@ -7660,7 +7660,7 @@ var FolderOverviewSettings = class extends import_obsidian46.Modal {
     updateYaml(this.plugin, this.ctx, this.el, this.yaml, false);
   }
   initializeYaml(yaml, ctx, defaultSettings) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
     if (!yaml) {
       return this.defaultSettings;
     }
@@ -7691,7 +7691,7 @@ var FolderOverviewSettings = class extends import_obsidian46.Modal {
         fmtpIntegration: (_u = yaml == null ? void 0 : yaml.fmtpIntegration) != null ? _u : defaultSettings.fmtpIntegration,
         titleSize: (_v = yaml == null ? void 0 : yaml.titleSize) != null ? _v : defaultSettings.titleSize,
         isInCallout: (_w = yaml == null ? void 0 : yaml.isInCallout) != null ? _w : false,
-        useWikilinks: (_x = yaml == null ? void 0 : yaml.useWikilinks) != null ? _x : defaultSettings.useWikilinks
+        useWikilinks: (_y = (_x = yaml == null ? void 0 : yaml.useWikilinks) != null ? _x : defaultSettings.useWikilinks) != null ? _y : true
       };
     }
     return yaml;
