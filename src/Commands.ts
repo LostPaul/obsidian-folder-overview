@@ -29,8 +29,7 @@ export function registerOverviewCommands(plugin: FolderOverviewPlugin | FolderNo
 	});
 
 	plugin.registerEvent(
-		// eslint-disable-next-line max-len
-		plugin.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, _view: MarkdownView) => {
+		(plugin.app.workspace as any).on('editor-menu', (menu: Menu, editor: Editor, _view: MarkdownView) => {
 			const { line } = editor.getCursor();
 			const lineText = editor.getLine(line);
 			if (lineText.trim() === '' || lineText.trim() === '>') {

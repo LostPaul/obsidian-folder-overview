@@ -24,7 +24,7 @@ export class CardsOverview {
 		this.plugin = folderOverview.plugin;
 		this.folderOverview = folderOverview;
 		this.yaml = folderOverview.yaml;
-		this.root = folderOverview.root;
+		this.root = folderOverview.root!;
 		this.ctx = folderOverview.ctx;
 	}
 

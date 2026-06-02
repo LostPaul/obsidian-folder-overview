@@ -16,13 +16,13 @@ import { parseOverviewTitle } from './utils/functions';
 
 export class FolderOverviewView extends ItemView {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
-	activeFile: TFile | null;
-	overviewId: string | null;
+	activeFile: TFile | undefined | null;
+	overviewId: string | undefined;
 	yaml: defaultOverviewSettings;
 	defaultSettings: defaultOverviewSettings;
 	contentEl: HTMLElement = this.containerEl.children[1] as HTMLElement;
 	changedSection: string | null | undefined;
-	modal: FolderOverviewSettings;
+	modal: FolderOverviewSettings | undefined;
 
 	constructor(leaf: WorkspaceLeaf, plugin: FolderOverviewPlugin | FolderNotesPlugin) {
 		super(leaf);
@@ -33,7 +33,10 @@ export class FolderOverviewView extends ItemView {
 			this.defaultSettings = plugin.settings.defaultOverviewSettings;
 		} else if (plugin instanceof FolderNotesPlugin) {
 			this.defaultSettings = plugin.settings.defaultOverview;
+		} else {
+			throw new Error('Plugin must be an instance of FolderOverviewPlugin or FolderNotesPlugin');
 		}
+		this.yaml = this.defaultSettings;
 
 		this.registerEvent(
 			this.plugin.app.workspace.on('file-open', (file) => {

@@ -71,6 +71,7 @@ export class SettingsTab extends PluginSettingTab {
 
 	constructor(plugin: FolderOverviewPlugin) {
 		super(plugin.app, plugin);
+		this.plugin = plugin;
 	}
 
 	display(): void {
@@ -248,7 +249,6 @@ export async function createOverviewSettings(
 							'Find more information about the title in the documentation. ' +
 							'There is also a list of variables you can use',
 						href:
-							// eslint-disable-next-line max-len
 							'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#title',
 					});
 					link.target = '_blank';
@@ -308,7 +308,6 @@ export async function createOverviewSettings(
 					const link = frag.createEl('a', {
 						text: 'Find more information about this setting in the documentation.',
 						href:
-							// eslint-disable-next-line max-len
 							'https://lostpaul.github.io/obsidian-folder-notes/Folder%20overview/#folder-path',
 					});
 					link.target = '_blank';
@@ -377,6 +376,7 @@ export async function createOverviewSettings(
 	createOrReplaceSetting(contentEl, 'use-wikilinks', changedSection, (settingEl) => {
 		new Setting(settingEl)
 			.setName('Use wikilinks')
+			// eslint-disable-next-line max-len
 			.setDesc('Choose if the links in the link list should be in wikilink format or markdown link format (e.g., [[link]] vs [link](url)).')
 			.addToggle((toggle) =>
 				toggle
@@ -458,8 +458,8 @@ export async function createOverviewSettings(
 					.addOption('list', 'List')
 					.addOption('explorer', 'Explorer')
 					.setValue(yaml?.style || 'list')
-					.onChange(async (value: 'list') => {
-						yaml.style = value;
+					.onChange((value: string) => {
+						yaml.style = value as 'list' | 'explorer';
 						updateSettings(
 							contentEl, yaml, plugin, false,
 							defaultSettings, el, ctx, file,
@@ -614,8 +614,8 @@ export async function createOverviewSettings(
 					.addOption('created', 'Created')
 					.addOption('modified', 'Modified')
 					.setValue(yaml?.sortBy || 'name')
-					.onChange(async (value: 'name' | 'created' | 'modified') => {
-						yaml.sortBy = value;
+					.onChange(async (value: string) => {
+						yaml.sortBy = value as 'name' | 'created' | 'modified';
 						updateSettings(
 							contentEl, yaml, plugin, false,
 							defaultSettings, el, ctx, file,
@@ -675,7 +675,6 @@ export async function createOverviewSettings(
 		changedSection,
 		(settingEl) => {
 			new Setting(settingEl)
-				// eslint-disable-next-line max-len
 				.setName('Only show empty folders which are on the first level of the folder overview')
 				.addToggle((toggle) => {
 					toggle

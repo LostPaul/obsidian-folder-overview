@@ -5,11 +5,12 @@ export class ListComponent {
 	emitter: CustomEventEmitter;
 	containerEl: HTMLElement;
 	controlEl: HTMLElement;
-	emptyStateEl: HTMLElement;
+	emptyStateEl: HTMLElement | undefined;
 	listEl: HTMLElement;
 	values: string[];
 	defaultValues: string[];
 	constructor(containerEl: HTMLElement, values: string[] = [], defaultValues: string[] = []) {
+		this.values = [];
 		this.emitter = new CustomEventEmitter();
 		this.containerEl = containerEl;
 		this.controlEl = containerEl.querySelector('.setting-item-control') || containerEl;

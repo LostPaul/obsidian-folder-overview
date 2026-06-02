@@ -5,7 +5,7 @@ import {
 	type FolderOverview, type defaultOverviewSettings,
 } from '../FolderOverview';
 import { getFolderPathFromString } from '../../../functions/utils';
-import FolderOverviewPlugin from '../main';
+import type FolderOverviewPlugin from '../main';
 import FolderNotesPlugin from '../../../main';
 
 export async function renderListOverview(
@@ -43,6 +43,7 @@ export async function renderListOverview(
 		files.filter((f) => f instanceof TFolder), folderOverview.yaml, plugin,
 	);
 	files = sortFiles(files.filter((f) => f instanceof TFile), folderOverview.yaml, plugin);
+	if (!ul) { return; }
 	folders.forEach(async (file) => {
 		if (file instanceof TFolder) {
 			if (yaml.includeTypes.includes('folder')) {
@@ -94,7 +95,7 @@ function debounce(func: Function, wait: number) {
 	let timeout: number | undefined;
 	return (...args: unknown[]): void => {
 		clearTimeout(timeout);
-		timeout = window.setTimeout(() => func.apply(this, args), wait);
+		timeout = window.setTimeout(() => func(...args), wait);
 	};
 }
 
@@ -180,13 +181,13 @@ async function goThroughFolders(
 	const files = sortFiles(
 		allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null),
 		yaml,
-		plugin
+		plugin,
 	);
 
 	const folders = sortFiles(
 		allFiles.filter((file): file is TFolder => (file instanceof TFolder) && file !== null),
 		yaml,
-		plugin
+		plugin,
 	);
 	const ul = list.createEl('ul', { cls: 'folder-overview-list' });
 

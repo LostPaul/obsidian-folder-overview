@@ -48,11 +48,13 @@ export class FileExplorerOverview {
 
 	async renderFileExplorer(): Promise<void> {
 		this.disconnectListeners();
-		const plugin = this.plugin;
-		const ctx = this.folderOverview.ctx;
-		const root = this.folderOverview.root;
-		const yaml = this.folderOverview.yaml;
-		const folderOverview = this.folderOverview;
+		const { plugin: plugin, ctx, root, yaml, folderOverview } = {
+			plugin: this.plugin,
+			ctx: this.folderOverview.ctx,
+			root: this.folderOverview.root,
+			yaml: this.folderOverview.yaml,
+			folderOverview: this.folderOverview,
+		};
 		let folder: HTMLElement | null = null;
 		if (plugin instanceof FolderNotesPlugin) {
 			folder = getFileExplorerElement(yaml.folderPath, plugin);
@@ -78,7 +80,7 @@ export class FileExplorerOverview {
 		const sourceFolderPath = tFolder?.path || '';
 
 		folderElement = document.querySelectorAll('.nav-files-container')[0] as HTMLElement;
-		if (!folderElement) {
+		if (!folderElement && root) {
 			folderElement = root.createDiv({
 				cls: 'nav-files-container',
 			});
@@ -166,12 +168,12 @@ export class FileExplorerOverview {
 			folderOverview.yaml.depth,
 			folderOverview.pathBlacklist,
 			folderOverview.yaml,
-			folderOverview.sourceFile
+			folderOverview.sourceFile,
 		);
 		const sortedFiles = sortFiles(
 			(allFiles ?? []).filter((file): file is TAbstractFile => file !== null),
 			folderOverview.yaml,
-			folderOverview.plugin
+			folderOverview.plugin,
 		);
 
 		const folders = sortedFiles.filter((child) => child instanceof TFolder);
@@ -430,9 +432,13 @@ export class FileExplorerOverview {
 		folderTitle.draggable = true;
 		folderTitle.addEventListener('dragstart', (e) => {
 			const { dragManager } = this.plugin.app;
-			const dragData = dragManager.dragFolder(e, child);
-			dragManager.onDragStart(e, dragData);
-			folderTitle?.classList.add('is-being-dragged');
+			if (dragManager && typeof dragManager.dragFolder === 'function') {
+				const dragData = dragManager.dragFolder(e, child);
+				if (typeof dragManager.onDragStart === 'function') {
+					dragManager.onDragStart(e, dragData);
+				}
+				folderTitle?.classList.add('is-being-dragged');
+			}
 		});
 
 		folderTitle.addEventListener('dragend', () => {
@@ -491,10 +497,14 @@ export class FileExplorerOverview {
 		if (yaml.allowDragAndDrop) {
 			fileTitle.draggable = true;
 			fileTitle.addEventListener('dragstart', (e) => {
-				const dragManager = plugin.app.dragManager;
-				const dragData = dragManager.dragFile(e, child);
-				dragManager.onDragStart(e, dragData);
-				fileTitle.classList.add('is-being-dragged');
+				const { dragManager } = plugin.app;
+				if (dragManager && typeof dragManager.dragFile === 'function') {
+					const dragData = dragManager.dragFile(e, child);
+					if (typeof dragManager.onDragStart === 'function') {
+						dragManager.onDragStart(e, dragData);
+					}
+					fileTitle.classList.add('is-being-dragged');
+				}
 			});
 
 			fileTitle.addEventListener('dragend', () => {

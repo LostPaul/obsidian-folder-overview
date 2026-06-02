@@ -10,12 +10,12 @@ import type { App, TFile, TFolder } from 'obsidian';
 import type FolderOverviewPlugin from '../main';
 export class FrontMatterTitlePluginHandler {
 	plugin: FolderOverviewPlugin;
-	app: App;
+	app!: App;
 	api: ApiInterface | null = null;
 	deffer: DeferInterface | null = null;
 	modifiedFolders: Map<string, TFolder> = new Map();
-	eventRef: ListenerRef<'manager:update'>;
-	dispatcher: EventDispatcherInterface<Events>;
+	eventRef: ListenerRef<'manager:update'> | null = null;
+	dispatcher: EventDispatcherInterface<Events> | null = null;
 	constructor(plugin: FolderOverviewPlugin) {
 		this.plugin = plugin;
 		this.app = plugin.app;
@@ -40,7 +40,7 @@ export class FrontMatterTitlePluginHandler {
 
 	deleteEvent(): void {
 		if (this.eventRef) {
-			this.dispatcher.removeListener(this.eventRef);
+			this.dispatcher?.removeListener(this.eventRef);
 		}
 	}
 

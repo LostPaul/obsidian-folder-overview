@@ -73,13 +73,13 @@ export class FolderOverview {
 	plugin: FolderOverviewPlugin | FolderNotesPlugin;
 	ctx: MarkdownPostProcessorContext;
 	source: string;
-	folderName: string | null;
+	folderName: string | undefined;
 	el: HTMLElement;
 	pathBlacklist: string[] = [];
 	folders: TFolder[] = [];
 	sourceFolder: TFolder | undefined | null;
-	root: HTMLElement;
-	listEl: HTMLUListElement;
+	root: HTMLElement | undefined;
+	listEl: HTMLUListElement | undefined;
 	defaultSettings: defaultOverviewSettings;
 	sourceFile: TFile | undefined;
 	counter = 0;
@@ -156,7 +156,7 @@ export class FolderOverview {
 
 		await this.renderTitle(
 			this.sourceFolder, sourceFolderPath,
-			this.sourceFile as TFile, titleEl,
+			this.sourceFile, titleEl,
 		);
 
 		if (!this.validateSourceFolder(this.sourceFolder, sourceFolderPath)) {
@@ -317,14 +317,14 @@ export class FolderOverview {
 
 	private handleLinkList(files: TAbstractFile[]): void {
 		if (this.yaml.useActualLinks) {
-			if (this.sourceFile) {
-				setTimeout(() => {
+			setTimeout(() => {
+				if (this.sourceFile instanceof TFile) {
 					updateLinkList(
 						files, this.plugin, this.yaml,
-						this.pathBlacklist, this.sourceFile as TFile,
+						this.pathBlacklist, this.sourceFile,
 					);
-				}, this.LINK_LIST_UPDATE_DELAY_MS);
-			}
+				}
+			}, this.LINK_LIST_UPDATE_DELAY_MS);
 		} else {
 			removeLinkList(this.plugin, this.sourceFile, this.yaml);
 		}
@@ -557,6 +557,7 @@ export class FolderOverview {
 
 	getElFromOverview(path: string): HTMLElement | null {
 		const selector = `[data-path='${CSS.escape(path)}']`;
+		if (!this.listEl) return null;
 		const el = this.listEl.querySelector(selector) as HTMLElement | null;
 		return el;
 	}
@@ -711,7 +712,7 @@ export function sortFiles(
 		}
 
 		if (a_IsFile && b_IsFile) {
-			return compareFiles(a as TFile, b as TFile);
+			return compareFiles(a, b);
 		}
 
 		return EQUAL;

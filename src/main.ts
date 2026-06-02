@@ -11,23 +11,21 @@ import { FolderOverview, type defaultOverviewSettings } from './FolderOverview';
 import { DEFAULT_SETTINGS, SettingsTab, type defaultSettings } from './settings';
 import { registerOverviewCommands } from './Commands';
 import { FolderOverviewSettings } from './modals/Settings';
-import FolderNotesPlugin from '../../main';
+import type FolderNotesPlugin from '../../main';
 import { FrontMatterTitlePluginHandler } from './utils/FmtpHandler';
 import { updateAllOverviews } from './utils/functions';
 import { FvIndexDB } from './utils/IndexDB';
 
 export default class FolderOverviewPlugin extends Plugin {
-	settings: defaultSettings;
-	settingsTab: SettingsTab;
-	fmtpHandler: FrontMatterTitlePluginHandler;
-	fvIndexDB: FvIndexDB;
+	settings: defaultSettings = DEFAULT_SETTINGS;
+	settingsTab: SettingsTab = new SettingsTab(this);
+	fmtpHandler: FrontMatterTitlePluginHandler | undefined;
+	fvIndexDB: FvIndexDB = new FvIndexDB(this);
 	async onload(): Promise<void> {
 		await this.loadSettings();
-		this.settingsTab = new SettingsTab(this);
 		this.addSettingTab(this.settingsTab);
 		this.settingsTab.display();
 		registerOverviewCommands(this);
-		this.fvIndexDB = new FvIndexDB(this);
 
 		this.app.workspace.onLayoutReady(async () => {
 			this.registerView(FOLDER_OVERVIEW_VIEW, (leaf: WorkspaceLeaf) => {
@@ -57,7 +55,7 @@ export default class FolderOverviewPlugin extends Plugin {
 				this.handleOverviewBlock(source, el, ctx);
 			},
 		);
-		console.log('loading Folder Overview plugin');
+		console.debug('loading Folder Overview plugin');
 	}
 
 	handleVaultChange(): void {
@@ -110,7 +108,7 @@ export default class FolderOverviewPlugin extends Plugin {
 	}
 
 	async onunload(): Promise<void> {
-		console.log('Unloading Folder Overview plugin');
+		console.debug('Unloading Folder Overview plugin');
 	}
 
 	async loadSettings(): Promise<void> {

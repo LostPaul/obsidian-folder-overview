@@ -22,9 +22,8 @@ export function getFolderPathFromString(path: string): string {
 	const folderPath = path.substring(0, subString);
 	if (folderPath === '') {
 		return '/';
-	} else {
-		return folderPath;
 	}
+	return folderPath;
 }
 
 const CODE_BLOCK_END_NOT_FOUND = -1;
@@ -60,12 +59,12 @@ export async function updateAllOverviews(
 			return;
 		}
 
-		if (!hasOverviewYaml(this, file)) {
+		if (!hasOverviewYaml(plugin, file)) {
 			plugin.fvIndexDB.removeNote(file.path);
 			return;
 		}
 
-		const overviews = await getOverviews(this, file);
+		const overviews = await getOverviews(plugin, file);
 		overviews.forEach(async (overview) => {
 			if (!overview.useActualLinks) return;
 			let files: TAbstractFile[] = [];
@@ -74,7 +73,7 @@ export async function updateAllOverviews(
 				sourceFolderPath = '/';
 			}
 
-			const sourceFolder = this.app.vault.getAbstractFileByPath(sourceFolderPath);
+			const sourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
 			if (!(sourceFolder instanceof TFolder) && sourceFolderPath !== '/') { return; }
 
 			if (sourceFolder?.path === '/') {
@@ -95,7 +94,7 @@ export async function updateAllOverviews(
 			files = getAllFiles(files, sourceFolderPath, overview.depth);
 			const filteredFiles = await filterFiles(
 				files,
-				this,
+				plugin,
 				sourceFolderPath,
 				overview.depth,
 				[],
@@ -109,9 +108,9 @@ export async function updateAllOverviews(
 				files = getAllFiles(files, sourceFolderPath, overview.depth);
 			}
 
-			files = sortFiles(files, overview, this);
+			files = sortFiles(files, overview, plugin);
 
-			updateLinkList(files, this, overview, [], file);
+			updateLinkList(files, plugin, overview, [], file);
 		});
 	});
 }
