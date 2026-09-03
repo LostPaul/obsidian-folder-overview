@@ -18,7 +18,7 @@ import NewFolderNameModal from '../../modals/NewFolderName';
 import { CustomEventEmitter } from './utils/EventEmitter';
 import type FolderOverviewPlugin from './main';
 import FolderNotesPlugin from '../../main';
-import { getFolder } from '../../functions/folderNoteFunctions';
+import { getFolder, getFolderNote } from '../../functions/folderNoteFunctions';
 import { removeLinkList, updateLinkList } from './utils/LinkList';
 import {
 	buildYamlConfig,
@@ -707,8 +707,8 @@ export function sortFiles(
 
 		if (a_IsFolder && b_IsFolder) {
 			return yaml.sortByAsc
-				? collator.compare(a.name, b.name)
-				: collator.compare(b.name, a.name);
+				? collator.compare(getSortName(a), getSortName(b))
+				: collator.compare(getSortName(b), getSortName(a));
 		}
 
 		if (a_IsFile && b_IsFile) {
@@ -725,10 +725,26 @@ export function sortFiles(
 			return yaml.sortByAsc ? a.stat.mtime - b.stat.mtime : b.stat.mtime - a.stat.mtime;
 		} else if (yaml.sortBy === 'name') {
 			return yaml.sortByAsc
-				? collator.compare(a.basename, b.basename)
-				: collator.compare(b.basename, a.basename);
+				? collator.compare(getSortName(a), getSortName(b))
+				: collator.compare(getSortName(b), getSortName(a));
 		}
 		return 0;
+	}
+
+	// Folders are shown under the title of their folder note when the Front Matter Title
+	// integration is on, so they have to be sorted under that name too.
+	function getSortName(file: TAbstractFile): string {
+		const fallback = file instanceof TFile ? file.basename : file.name;
+		if (!yaml.fmtpIntegration) { return fallback; }
+
+		if (file instanceof TFile) {
+			return plugin.fmtpHandler?.resolveTitle(file.path) || fallback;
+		}
+		if (!(plugin instanceof FolderNotesPlugin)) { return fallback; }
+
+		const folderNote = getFolderNote(plugin, file.path);
+		if (!folderNote) { return fallback; }
+		return plugin.fmtpHandler?.resolveTitle(folderNote.path) || fallback;
 	}
 
 	files.sort(compareFilesAndFolders);
