@@ -26,6 +26,9 @@ export default class FolderOverviewPlugin extends Plugin {
 	private updateAllOverviewsDebounced = debounce(() => {
 		updateAllOverviews(this);
 	}, DEBOUNCE_DELAY_MS, true);
+	// Edit buttons that already have a click listener, mapped to the latest handler, so the
+	// MutationObserver in handleOverviewBlock doesn't add a listener per mutation.
+	private editButtonHandlers: WeakMap<Node, () => void> = new WeakMap();
 	async onload(): Promise<void> {
 		await this.loadSettings();
 		this.addSettingTab(this.settingsTab);
@@ -77,17 +80,21 @@ export default class FolderOverviewPlugin extends Plugin {
 	): Promise<void> {
 		const observer = new MutationObserver(() => {
 			const editButton = el.parentElement?.childNodes.item(1);
-			if (editButton) {
-				editButton.addEventListener('click', (e) => {
-					e.stopImmediatePropagation();
-					e.preventDefault();
-					e.stopPropagation();
-					new FolderOverviewSettings(
-						this.app, this, parseYaml(source),
-						ctx, el, this.settings.defaultOverviewSettings,
-					).open();
-				}, { capture: true });
-			}
+			if (!editButton) return;
+			const hasListener = this.editButtonHandlers.has(editButton);
+			this.editButtonHandlers.set(editButton, () => {
+				new FolderOverviewSettings(
+					this.app, this, parseYaml(source),
+					ctx, el, this.settings.defaultOverviewSettings,
+				).open();
+			});
+			if (hasListener) return;
+			editButton.addEventListener('click', (e) => {
+				e.stopImmediatePropagation();
+				e.preventDefault();
+				e.stopPropagation();
+				this.editButtonHandlers.get(editButton)?.();
+			}, { capture: true });
 		});
 
 		observer.observe(el, {
