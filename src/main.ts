@@ -16,11 +16,16 @@ import { FrontMatterTitlePluginHandler } from './utils/FmtpHandler';
 import { updateAllOverviews } from './utils/functions';
 import { FvIndexDB } from './utils/IndexDB';
 
+const DEBOUNCE_DELAY_MS = 2000;
+
 export default class FolderOverviewPlugin extends Plugin {
 	settings: defaultSettings = DEFAULT_SETTINGS;
 	settingsTab: SettingsTab = new SettingsTab(this);
 	fmtpHandler: FrontMatterTitlePluginHandler | undefined;
 	fvIndexDB: FvIndexDB = new FvIndexDB(this);
+	private updateAllOverviewsDebounced = debounce(() => {
+		updateAllOverviews(this);
+	}, DEBOUNCE_DELAY_MS, true);
 	async onload(): Promise<void> {
 		await this.loadSettings();
 		this.addSettingTab(this.settingsTab);
@@ -59,11 +64,10 @@ export default class FolderOverviewPlugin extends Plugin {
 	}
 
 	handleVaultChange(): void {
-		const DEBOUNCE_DELAY_MS = 2000;
+		// Obsidian fires 'create' for every existing file while the vault loads.
+		if (!this.app.workspace.layoutReady) return;
 		if (!this.settings.globalSettings.autoUpdateLinks) return;
-		debounce(() => {
-			updateAllOverviews(this);
-		}, DEBOUNCE_DELAY_MS, true)();
+		this.updateAllOverviewsDebounced();
 	}
 
 	async handleOverviewBlock(

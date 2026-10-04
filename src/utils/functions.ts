@@ -1,20 +1,19 @@
 import {
 	type defaultOverviewSettings,
 	type includeTypes,
-	filterFiles, getAllFiles,
+	filterFiles, getAllFiles, getInitialFiles,
 	getOverviews, hasOverviewYaml,
-	sortFiles,
+	resolveSourceFolder, sortFiles,
 } from '../FolderOverview';
 import { buildLinkListBlock, updateLinkList } from './LinkList';
 import type FolderOverviewPlugin from '../main';
-import type FolderNotesPlugin from '../../../main';
+import FolderNotesPlugin from '../../../main';
 import {
 	type MarkdownPostProcessorContext,
 	parseYaml,
 	stringifyYaml,
-	type TAbstractFile,
 	TFile,
-	TFolder,
+	type TFolder,
 } from 'obsidian';
 
 export function getFolderPathFromString(path: string): string {
@@ -52,6 +51,9 @@ export async function updateAllOverviews(
 ): Promise<void> {
 	const filePaths = await plugin.fvIndexDB.getAllNotes();
 	if (filePaths.length === 0) return;
+	const defaultSettings = plugin instanceof FolderNotesPlugin
+		? plugin.settings.defaultOverview
+		: plugin.settings.defaultOverviewSettings;
 	filePaths.forEach(async (filePath) => {
 		const file = plugin.app.vault.getAbstractFileByPath(filePath);
 		if (!(file instanceof TFile)) {
@@ -59,58 +61,42 @@ export async function updateAllOverviews(
 			return;
 		}
 
-		if (!hasOverviewYaml(plugin, file)) {
+		if (!await hasOverviewYaml(plugin, file)) {
 			plugin.fvIndexDB.removeNote(file.path);
 			return;
 		}
 
 		const overviews = await getOverviews(plugin, file);
 		overviews.forEach(async (overview) => {
-			if (!overview.useActualLinks) return;
-			let files: TAbstractFile[] = [];
-			let sourceFolderPath = overview.folderPath.trim();
-			if (!sourceFolderPath.includes('/')) {
-				sourceFolderPath = '/';
-			}
-
-			const sourceFolder = plugin.app.vault.getAbstractFileByPath(sourceFolderPath);
-			if (!(sourceFolder instanceof TFolder) && sourceFolderPath !== '/') { return; }
-
-			if (sourceFolder?.path === '/') {
-				const rootFiles: TAbstractFile[] = [];
-				plugin.app.vault
-					.getAllLoadedFiles()
-					.filter((f) => f.parent?.path === '/')
-					.forEach((f) => {
-						if (!f.path.includes('/')) {
-							rootFiles.push(f);
-						}
-					});
-				files = rootFiles;
-			} else if (sourceFolder instanceof TFolder) {
-				files = sourceFolder.children;
-			}
-
-			files = getAllFiles(files, sourceFolderPath, overview.depth);
-			const filteredFiles = await filterFiles(
-				files,
-				plugin,
-				sourceFolderPath,
-				overview.depth,
-				[],
+			// Build the link list exactly like the rendered overview does, otherwise opening the
+			// note and this background update keep overwriting each other's link list.
+			const yaml = buildYamlConfig(
 				overview,
+				defaultSettings,
+				{ sourcePath: file.path },
+				overview.includeTypes || defaultSettings.includeTypes || ['folder', 'markdown'],
+			);
+			if (!yaml.useActualLinks) return;
+
+			const sourceFolder = resolveSourceFolder(plugin, yaml, file, file.path);
+			if (!sourceFolder) return;
+
+			let files = await filterFiles(
+				getInitialFiles(plugin, sourceFolder),
+				plugin,
+				sourceFolder.path,
+				yaml.depth,
+				[],
+				yaml,
 				file,
 			);
-			files = filteredFiles.filter(
-				(f): f is TAbstractFile => f !== null,
-			);
-			if (!overview.includeTypes.includes('folder')) {
-				files = getAllFiles(files, sourceFolderPath, overview.depth);
+			if (!yaml.includeTypes.includes('folder')) {
+				files = getAllFiles(files, sourceFolder.path, yaml.depth);
 			}
 
-			files = sortFiles(files, overview, plugin);
+			files = sortFiles(files, yaml, plugin);
 
-			updateLinkList(files, plugin, overview, [], file);
+			updateLinkList(files, plugin, yaml, [], file);
 		});
 	});
 }
@@ -120,7 +106,7 @@ export async function updateAllOverviews(
 export function buildYamlConfig(
 	yaml: defaultOverviewSettings,
 	defaultSettings: defaultOverviewSettings,
-	ctx: MarkdownPostProcessorContext,
+	ctx: Pick<MarkdownPostProcessorContext, 'sourcePath'>,
 	includeTypesParam: includeTypes[],
 ): defaultOverviewSettings {
 	return {

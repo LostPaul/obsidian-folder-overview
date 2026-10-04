@@ -164,7 +164,7 @@ export class FolderOverview {
 			return;
 		}
 
-		let files = this.getInitialFiles(plugin, this.sourceFolder);
+		let files = getInitialFiles(plugin, this.sourceFolder);
 
 		files = await this.filterAndProcessFiles(
 			files, plugin, sourceFolderPath,
@@ -251,37 +251,10 @@ export class FolderOverview {
 	}
 
 	setSourceFolder(): void {
-		switch (this.yaml?.folderPath.trim()) {
-			case '':
-			case 'File’s parent folder path': {
-				const folderPath = getFolderPathFromString(this.ctx.sourcePath);
-				const sourceFolder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
-				if (sourceFolder instanceof TFolder) {
-					this.yaml.folderPath = sourceFolder.path;
-					this.sourceFolder = sourceFolder;
-				}
-				break;
-			}
-			case 'Path of folder linked to the file': {
-				if (this.plugin instanceof FolderNotesPlugin && this.sourceFile instanceof TFile) {
-					const folderNoteFolder = getFolder(this.plugin, this.sourceFile);
-					if (folderNoteFolder instanceof TFolder) {
-						this.sourceFolder = folderNoteFolder;
-						this.yaml.folderPath = folderNoteFolder.path;
-					} else {
-						this.yaml.folderPath = '';
-					}
-				}
-				break;
-			}
-			default: {
-				const sourceFolder = this.plugin.app.vault
-					.getAbstractFileByPath(this.yaml.folderPath);
-				if (sourceFolder instanceof TFolder) {
-					this.sourceFolder = sourceFolder;
-				}
-			}
-		}
+		this.sourceFolder = resolveSourceFolder(
+			this.plugin, this.yaml,
+			this.sourceFile, this.ctx.sourcePath,
+		);
 	}
 
 	private async filterAndProcessFiles(
@@ -375,27 +348,6 @@ export class FolderOverview {
 			return false;
 		}
 		return true;
-	}
-
-	private getInitialFiles(
-		plugin: FolderOverviewPlugin | FolderNotesPlugin,
-		sourceFolder: TFolder | undefined | null,
-	): TAbstractFile[] {
-		if (sourceFolder?.path === '/') {
-			const rootFiles: TAbstractFile[] = [];
-			plugin.app.vault
-				.getAllLoadedFiles()
-				.filter((f) => f.parent?.path === '/')
-				.forEach((file) => {
-					if (!file.path.includes('/')) {
-						rootFiles.push(file);
-					}
-				});
-			return rootFiles;
-		} else if (sourceFolder instanceof TFolder) {
-			return sourceFolder.children;
-		}
-		return [];
 	}
 
 	private renderOverviewStyle(
@@ -657,6 +609,63 @@ export async function hasOverviewYaml(
 
 	const yamlBlocks = content.match(/```folder-overview\n([\s\S]*?)```/g);
 	return !!yamlBlocks;
+}
+
+// Resolves placeholder folder paths (e.g. "Path of folder linked to the file") to the folder
+// they point at and writes the resolved path back into yaml.folderPath.
+export function resolveSourceFolder(
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+	yaml: defaultOverviewSettings,
+	sourceFile: TFile | undefined,
+	sourcePath: string,
+): TFolder | undefined {
+	switch (yaml.folderPath.trim()) {
+		case '':
+		case 'File’s parent folder path': {
+			const folderPath = getFolderPathFromString(sourcePath);
+			const sourceFolder = plugin.app.vault.getAbstractFileByPath(folderPath);
+			if (!(sourceFolder instanceof TFolder)) return undefined;
+			yaml.folderPath = sourceFolder.path;
+			return sourceFolder;
+		}
+		case 'Path of folder linked to the file': {
+			if (!(plugin instanceof FolderNotesPlugin) || !(sourceFile instanceof TFile)) {
+				return undefined;
+			}
+			const folderNoteFolder = getFolder(plugin, sourceFile);
+			if (!(folderNoteFolder instanceof TFolder)) {
+				yaml.folderPath = '';
+				return undefined;
+			}
+			yaml.folderPath = folderNoteFolder.path;
+			return folderNoteFolder;
+		}
+		default: {
+			const sourceFolder = plugin.app.vault.getAbstractFileByPath(yaml.folderPath);
+			return sourceFolder instanceof TFolder ? sourceFolder : undefined;
+		}
+	}
+}
+
+export function getInitialFiles(
+	plugin: FolderOverviewPlugin | FolderNotesPlugin,
+	sourceFolder: TFolder | undefined | null,
+): TAbstractFile[] {
+	if (sourceFolder?.path === '/') {
+		const rootFiles: TAbstractFile[] = [];
+		plugin.app.vault
+			.getAllLoadedFiles()
+			.filter((f) => f.parent?.path === '/')
+			.forEach((file) => {
+				if (!file.path.includes('/')) {
+					rootFiles.push(file);
+				}
+			});
+		return rootFiles;
+	} else if (sourceFolder instanceof TFolder) {
+		return sourceFolder.children;
+	}
+	return [];
 }
 
 class CustomMarkdownRenderChild extends MarkdownRenderChild {
