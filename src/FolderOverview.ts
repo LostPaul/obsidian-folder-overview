@@ -309,6 +309,7 @@ export class FolderOverview {
 		sourceFile: TFile,
 		titleEl: HTMLElement,
 	): Promise<void> {
+		titleEl.toggleClass('hide', !this.yaml.showTitle)
 		if (!this.yaml.showTitle) return;
 		const variables = {
 			folderName: sourceFolder?.path === '/' || sourceFolderPath === '/'
