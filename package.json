@@ -1,0 +1,11 @@
+{
+	"name": "folder-overview-development",
+	"private": true,
+	"scripts": {
+		"test": "node --test tests/*.test.cjs",
+		"repro": "node tests/reproduce-refresh-growth.cjs"
+	},
+	"devDependencies": {
+		"typescript": "^6.0.3"
+	}
+}

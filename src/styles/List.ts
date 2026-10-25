@@ -16,6 +16,10 @@ export async function renderListOverview(
 	pathBlacklist: string[],
 	folderOverview: FolderOverview,
 ): Promise<void> {
+	if (folderOverview.disposed) return;
+	folderOverview.registerListRefresh(
+		() => renderListOverview(plugin, ctx, root, yaml, pathBlacklist, folderOverview),
+	);
 	const overviewList = folderOverview.listEl;
 	const { app } = plugin;
 	overviewList?.empty();
@@ -39,6 +43,7 @@ export async function renderListOverview(
 		folderOverview.pathBlacklist, yaml, folderOverview.sourceFile,
 	);
 
+	if (folderOverview.disposed) return;
 	const folders = sortFiles(
 		files.filter((f) => f instanceof TFolder), folderOverview.yaml, plugin,
 	);
@@ -50,7 +55,7 @@ export async function renderListOverview(
 				const folderItem = await addFolderList(
 					plugin, ul, folderOverview.pathBlacklist, file, folderOverview,
 				);
-				if (!folderItem) { return; }
+				if (!folderItem || folderOverview.disposed) { return; }
 				goThroughFolders(
 					plugin, folderItem, file, folderOverview.yaml.depth, sourceFolderPath, ctx,
 					folderOverview.yaml, folderOverview.pathBlacklist,
@@ -77,26 +82,6 @@ export async function renderListOverview(
 			);
 		}
 	});
-
-	// Event system for rendering list style
-	const DEBOUNCE_DELAY = 300;
-	const debouncedRenderListOverview = debounce(
-		() => renderListOverview(plugin, ctx, root, yaml, pathBlacklist, folderOverview),
-		DEBOUNCE_DELAY,
-	);
-	const handleVaultChange = (): void => {
-		debouncedRenderListOverview();
-	};
-
-	folderOverview.on('vault-change', handleVaultChange);
-}
-
-function debounce(func: Function, wait: number) {
-	let timeout: number | undefined;
-	return (...args: unknown[]): void => {
-		clearTimeout(timeout);
-		timeout = window.setTimeout(() => func(...args), wait);
-	};
 }
 
 export async function addFolderList(
@@ -106,6 +91,7 @@ export async function addFolderList(
 	folder: TFolder,
 	folderOverview: FolderOverview,
 ): Promise<HTMLLIElement | undefined> {
+	if (folderOverview.disposed) return;
 	folderOverview.el.parentElement?.classList.add('fv-remove-edit-button');
 	const folderDepth = folder.path.split('/').length;
 	const sourceFolderDepth = folderOverview.yaml.folderPath.split('/').length;
@@ -130,8 +116,9 @@ export async function addFolderList(
 				href: folderNote.path,
 			});
 			if (folderOverview.yaml.fmtpIntegration) {
-				folderNoteLink.innerText =
-					await plugin.fmtpHandler?.getNewFileName(folderNote) ?? folder.name;
+				const name = await plugin.fmtpHandler?.getNewFileName(folderNote);
+				if (folderOverview.disposed) return;
+				folderNoteLink.innerText = name ?? folder.name;
 			} else {
 				folderNoteLink.innerText = folder.name;
 			}
@@ -174,10 +161,12 @@ async function goThroughFolders(
 		depth--;
 	}
 
+	if (folderOverview.disposed) return;
 	const allFiles = await filterFiles(
 		folder.children, plugin, sourceFolderPath, depth, pathBlacklist, yaml,
 		folderOverview.sourceFile,
 	);
+	if (folderOverview.disposed) return;
 	const files = sortFiles(
 		allFiles.filter((file): file is TFile => !(file instanceof TFolder) && file !== null),
 		yaml,
@@ -197,7 +186,7 @@ async function goThroughFolders(
 				const folderItem = await addFolderList(
 					plugin, ul, pathBlacklist, file, folderOverview,
 				);
-				if (!folderItem) { return; }
+				if (!folderItem || folderOverview.disposed) { return; }
 				goThroughFolders(
 					plugin, folderItem, file, depth, sourceFolderPath, ctx, yaml,
 					pathBlacklist, includeTypes, disableFileTag, folderOverview,
@@ -231,6 +220,7 @@ async function addFileList(
 	pathBlacklist: string[], file: TFile, includeTypes: string[],
 	disableFileTag: boolean, folderOverview: FolderOverview,
 ): Promise<void> {
+	if (folderOverview.disposed) return;
 	if (!folderOverview.yaml.showFolderNotes) {
 		if (pathBlacklist.includes(file.path)) return;
 		if (plugin instanceof FolderNotesPlugin &&
@@ -250,7 +240,9 @@ async function addFileList(
 	const nameItem = listItem.createEl('div', { cls: 'folder-overview-list-item' });
 	const link = nameItem.createEl('a', { cls: 'internal-link', href: file.path });
 	if (folderOverview.yaml.fmtpIntegration) {
-		link.innerText = await plugin.fmtpHandler?.getNewFileName(file) ?? file.basename;
+		const name = await plugin.fmtpHandler?.getNewFileName(file);
+		if (folderOverview.disposed) return;
+		link.innerText = name ?? file.basename;
 	} else {
 		link.innerText = file.basename;
 	}

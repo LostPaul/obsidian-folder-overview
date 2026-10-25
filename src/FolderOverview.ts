@@ -83,6 +83,8 @@ export class FolderOverview {
 	defaultSettings: defaultOverviewSettings;
 	sourceFile: TFile | undefined;
 	counter = 0;
+	disposed = false;
+	private listRefreshRegistered = false;
 
 	LINK_LIST_UPDATE_DELAY_MS = 1000;
 
@@ -124,6 +126,7 @@ export class FolderOverview {
 		el: HTMLElement,
 		ctx: MarkdownPostProcessorContext,
 	): Promise<void> {
+		if (this.disposed) return;
 		el.empty();
 		if (!(this.sourceFile instanceof TFile)) return;
 		el.parentElement?.classList.add('folder-overview-container');
@@ -135,10 +138,10 @@ export class FolderOverview {
 			}
 		}
 
-		el.parentElement?.addEventListener(
-			'contextmenu', (e) => this.editOverviewContextMenu(e),
-			{ capture: true },
-		);
+		const parent = el.parentElement;
+		const onContextMenu = (event: MouseEvent): void => this.editOverviewContextMenu(event);
+		parent?.addEventListener('contextmenu', onContextMenu, { capture: true });
+		this.eventListeners.push(() => parent?.removeEventListener('contextmenu', onContextMenu, true));
 
 		this.root = el.createEl('div', { cls: 'folder-overview' });
 
@@ -159,6 +162,7 @@ export class FolderOverview {
 			this.sourceFile, titleEl,
 		);
 
+		if (this.disposed) return;
 		if (!this.validateSourceFolder(this.sourceFolder, sourceFolderPath)) {
 			this.addEditButton(this.root);
 			return;
@@ -171,6 +175,7 @@ export class FolderOverview {
 			this.yaml, this.sourceFile,
 		);
 
+		if (this.disposed) return;
 		if (files.length === 0) {
 			updateLinkList(
 				files,
@@ -230,12 +235,33 @@ export class FolderOverview {
 		}
 	}
 
+	registerListRefresh(render: () => Promise<void>): void {
+		if (this.disposed || this.listRefreshRegistered) return;
+		this.listRefreshRegistered = true;
+		let timer: number | undefined;
+		const refresh = (): void => {
+			window.clearTimeout(timer);
+			timer = window.setTimeout(() => {
+				timer = undefined;
+				if (!this.disposed) void render();
+			}, 300);
+		};
+		this.on('vault-change', refresh);
+		this.eventListeners.push(() => {
+			window.clearTimeout(timer);
+			this.off('vault-change', refresh);
+			this.listRefreshRegistered = false;
+		});
+	}
+
 	disconnectListeners(): void {
+		this.disposed = true;
 		this.eventListeners.forEach((unregister) => unregister());
 		this.eventListeners = [];
 	}
 
 	registerListeners(): void {
+		if (this.disposed) return;
 		const { plugin } = this;
 		const handleRename = (): void => this.handleVaultChange('renamed');
 		const handleCreate = (): void => this.handleVaultChange('created');
@@ -290,14 +316,15 @@ export class FolderOverview {
 
 	private handleLinkList(files: TAbstractFile[]): void {
 		if (this.yaml.useActualLinks) {
-			setTimeout(() => {
-				if (this.sourceFile instanceof TFile) {
+			const timer = window.setTimeout(() => {
+				if (!this.disposed && this.sourceFile instanceof TFile) {
 					updateLinkList(
 						files, this.plugin, this.yaml,
 						this.pathBlacklist, this.sourceFile,
 					);
 				}
 			}, this.LINK_LIST_UPDATE_DELAY_MS);
+			this.eventListeners.push(() => window.clearTimeout(timer));
 		} else {
 			removeLinkList(this.plugin, this.sourceFile, this.yaml);
 		}
@@ -327,7 +354,7 @@ export class FolderOverview {
 		title = replacePropertiesInTitle(title, frontmatter);
 		title = replaceVariablesInTitle(title, variables);
 
-		titleEl.innerText = title;
+		if (!this.disposed) titleEl.innerText = title;
 	}
 
 	private validateSourceFolder(

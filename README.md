@@ -19,3 +19,15 @@ This plugin offers the same functionality as the folder overview feature in the 
 
 ## Discord server
 [For regular updates on Folder overview and my other plugins, join the Discord server to get notified and participate in discussions.](https://discord.gg/4UQEDfQmuH)
+
+## Lifecycle regression tests
+
+Run `npm ci` and `npm test` in this repository. The tests execute the TypeScript
+list renderer and Markdown block lifecycle against a synthetic Obsidian host,
+with deterministic timers and no vault access. `npm run repro` prints the active
+refresh subscription count after eight spaced notifications. It should remain
+`[1,1,1,1,1,1,1,1,1]`, rather than the previous `[1,2,4,8,16,32,64,128,256]`.
+
+The production entry point is built from the Folder Notes repository, which
+provides the shared imports. With this revision checked out as its overview
+submodule, run `npm ci`, `npm run fn-build`, and `npm run fv-build` there.
